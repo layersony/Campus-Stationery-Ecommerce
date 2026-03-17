@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Add Product | Campus Stationery{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'vendor_dashboard' %}">Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'vendor_products' %}">Products</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Add New Product</h1>
+                <a href="{% url 'vendor_products' %}" class="btn btn-outline-secondary">
+                    <i class="bi bi-arrow-left"></i> Back to Products
+                </a>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="card-body">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row">
+                            <div class="col-md-8">
+                                <div class="mb-3">
+                                    <label class="form-label">Product Name *</label>
+                                    <input type="text" name="name" class="form-control" required>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Category *</label>
+                                    <select name="category" class="form-select" required>
+                                        <option value="">Select Category</option>
+                                        {% for cat in categories %}
+                                        <option value="{{ cat.id }}">{{ cat.name }}</option>
+                                        {% endfor %}
+                                    </select>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Description *</label>
+                                    <textarea name="description" class="form-control" rows="4" required></textarea>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Price (KES) *</label>
+                                        <input type="number" name="price" class="form-control" min="0" step="0.01" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Discount Price (KES)</label>
+                                        <input type="number" name="discount_price" class="form-control" min="0" step="0.01">
+                                        <small class="text-muted">Leave empty if no discount</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Stock Quantity *</label>
+                                        <input type="number" name="stock_quantity" class="form-control" min="0" required>
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">SKU *</label>
+                                        <input type="text" name="sku" class="form-control" required>
+                                        <small class="text-muted">Unique product code</small>
+                                    </div>
+                                </div>
+                                
+                                <div class="row">
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Brand</label>
+                                        <input type="text" name="brand" class="form-control">
+                                    </div>
+                                    <div class="col-md-6 mb-3">
+                                        <label class="form-label">Weight (grams)</label>
+                                        <input type="number" name="weight" class="form-control" min="0" step="0.01">
+                                    </div>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <label class="form-label">Dimensions</label>
+                                    <input type="text" name="dimensions" class="form-control" placeholder="e.g., 20x15x2 cm">
+                                </div>
+                            </div>
+                            
+                            <div class="col-md-4">
+                                <div class="mb-3">
+                                    <label class="form-label">Product Image</label>
+                                    <input type="file" name="image" class="form-control" accept="image/*">
+                                    <small class="text-muted">Recommended: 800x800px</small>
+                                </div>
+                                
+                                <div class="mb-3">
+                                    <div class="form-check">
+                                        <input type="checkbox" name="is_featured" class="form-check-input" id="featured">
+                                        <label class="form-check-label" for="featured">Featured Product</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <h6><i class="bi bi-info-circle"></i> Tips:</h6>
+                                    <ul class="mb-0 small">
+                                        <li>Use clear, high-quality images</li>
+                                        <li>Write detailed descriptions</li>
+                                        <li>Set competitive prices</li>
+                                        <li>Keep stock updated</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="d-grid gap-2 d-md-flex justify-content-md-end">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-check-circle"></i> Save Product
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

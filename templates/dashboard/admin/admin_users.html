@@ -1,0 +1,187 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Manage Users | Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse text-white">
+            <div class="position-sticky pt-3">
+                <h5 class="px-3 mb-3">Admin Panel</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'admin_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active text-white" href="{% url 'admin_users' %}">
+                            <i class="bi bi-people"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'admin_vendors' %}">
+                            <i class="bi bi-shop"></i> Vendors
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'admin_products' %}">
+                            <i class="bi bi-box-seam"></i> Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'admin_orders' %}">
+                            <i class="bi bi-bag"></i> Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'home' %}">
+                            <i class="bi bi-arrow-left"></i> Back to Site
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Users</h1>
+            </div>
+            
+            <!-- Stats -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5>Total Users</h5>
+                            <h3>{{ users.count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-info text-white">
+                        <div class="card-body">
+                            <h5>Students</h5>
+                            <h3>{{ total_students }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <h5>Vendors</h5>
+                            <h3>{{ total_vendors }}</h3>
+                            {% if pending_vendors > 0 %}
+                            <small>{{ pending_vendors }} pending verification</small>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filters -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <form method="get" class="row g-3">
+                        <div class="col-md-4">
+                            <input type="text" name="q" class="form-control" placeholder="Search users..." value="{{ request.GET.q }}">
+                        </div>
+                        <div class="col-md-3">
+                            <select name="type" class="form-select">
+                                <option value="">All Types</option>
+                                <option value="student" {% if request.GET.type == 'student' %}selected{% endif %}>Students</option>
+                                <option value="vendor" {% if request.GET.type == 'vendor' %}selected{% endif %}>Vendors</option>
+                                <option value="admin" {% if request.GET.type == 'admin' %}selected{% endif %}>Admins</option>
+                            </select>
+                        </div>
+                        <div class="col-md-2">
+                            <button type="submit" class="btn btn-primary w-100">Filter</button>
+                        </div>
+                        <div class="col-md-2">
+                            <a href="{% url 'admin_users' %}" class="btn btn-outline-secondary w-100">Clear</a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+            
+            <!-- Users Table -->
+            <div class="card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>User</th>
+                                <th>Type</th>
+                                <th>Contact</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for user in users %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if user.profile_picture %}
+                                            <img src="{{ user.profile_picture.url }}" class="rounded-circle" width="40" height="40" style="object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-secondary rounded-circle d-flex align-items-center justify-content-center text-white" style="width: 40px; height: 40px;">
+                                                <i class="bi bi-person"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ user.get_full_name|default:user.username }}</h6>
+                                            <small class="text-muted">@{{ user.username }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if user.user_type == 'student' %}primary{% elif user.user_type == 'vendor' %}warning{% else %}danger{% endif %}">
+                                        {{ user.get_user_type_display }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <small>{{ user.email }}</small><br>
+                                    <small class="text-muted">{{ user.phone_number|default:"No phone" }}</small>
+                                </td>
+                                <td>
+                                    {% if user.is_active %}
+                                        <span class="badge bg-success">Active</span>
+                                    {% else %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                    {% if user.user_type == 'vendor' %}
+                                        {% if user.is_verified %}
+                                            <span class="badge bg-success">Verified</span>
+                                        {% else %}
+                                            <span class="badge bg-warning">Pending</span>
+                                        {% endif %}
+                                    {% endif %}
+                                </td>
+                                <td>{{ user.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'profile' %}" class="btn btn-outline-primary">View</a>
+                                        {% if user.user_type == 'vendor' and not user.is_verified %}
+                                        <a href="{% url 'verify_vendor' user.id %}" class="btn btn-success">Verify</a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4 text-muted">No users found</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

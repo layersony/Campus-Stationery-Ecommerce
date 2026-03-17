@@ -1,0 +1,134 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+{% load humanize %}
+
+{% block title %}Checkout | Campus Stationery{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <h2 class="mb-4"><i class="bi bi-credit-card"></i> Checkout</h2>
+    
+    <div class="row">
+        <div class="col-lg-8">
+            <form method="post" action="{% url 'place_order' %}">
+                {% csrf_token %}
+                
+                <!-- Delivery Address -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Delivery Address</h5>
+                    </div>
+                    <div class="card-body">
+                        {% if addresses %}
+                        <div class="row">
+                            {% for address in addresses %}
+                            <div class="col-md-6 mb-3">
+                                <div class="card h-100 {% if address.is_default %}border-primary{% endif %}">
+                                    <div class="card-body">
+                                        <div class="form-check">
+                                            <input class="form-check-input" type="radio" name="address_id" id="address{{ address.id }}" value="{{ address.id }}" {% if address.is_default %}checked{% endif %} required>
+                                            <label class="form-check-label" for="address{{ address.id }}">
+                                                <strong>{{ address.name }}</strong>
+                                                {% if address.is_default %}<span class="badge bg-primary ms-2">Default</span>{% endif %}
+                                            </label>
+                                        </div>
+                                        <p class="mb-0 mt-2 small">
+                                            <i class="bi bi-telephone"></i> {{ address.phone }}<br>
+                                            {% if address.hostel_block %}
+                                            Hostel {{ address.hostel_block }}, Room {{ address.room_number }}<br>
+                                            {% endif %}
+                                            {{ address.campus_building }}
+                                        </p>
+                                    </div>
+                                </div>
+                            </div>
+                            {% endfor %}
+                        </div>
+                        <a href="{% url 'add_address' %}" class="btn btn-outline-primary btn-sm">
+                            <i class="bi bi-plus"></i> Add New Address
+                        </a>
+                        {% else %}
+                        <div class="alert alert-warning">
+                            No delivery addresses found. <a href="{% url 'add_address' %}">Add one now</a>.
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+                
+                <!-- Payment Method -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-wallet2"></i> Payment Method</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="form-check mb-3">
+                            <input class="form-check-input" type="radio" name="payment_method" id="mpesa" value="mpesa" checked>
+                            <label class="form-check-label d-flex align-items-center" for="mpesa">
+                                <span class="badge bg-success me-2">M-Pesa</span>
+                                <span>Pay with M-Pesa (Safaricom)</span>
+                            </label>
+                        </div>
+                        <div class="form-check">
+                            <input class="form-check-input" type="radio" name="payment_method" id="cod" value="cod">
+                            <label class="form-check-label d-flex align-items-center" for="cod">
+                                <span class="badge bg-secondary me-2">COD</span>
+                                <span>Cash on Delivery</span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Order Notes -->
+                <div class="card shadow-sm mb-4">
+                    <div class="card-header bg-white">
+                        <h5 class="mb-0"><i class="bi bi-pencil"></i> Additional Notes</h5>
+                    </div>
+                    <div class="card-body">
+                        <textarea name="notes" class="form-control" rows="3" placeholder="Any special instructions for delivery..."></textarea>
+                    </div>
+                </div>
+                
+                <div class="d-grid d-md-block">
+                    <button type="submit" class="btn btn-primary btn-lg">
+                        <i class="bi bi-check-circle"></i> Place Order
+                    </button>
+                    <a href="{% url 'cart' %}" class="btn btn-outline-secondary btn-lg ms-md-2">
+                        <i class="bi bi-arrow-left"></i> Back to Cart
+                    </a>
+                </div>
+            </form>
+        </div>
+        
+        <!-- Order Summary -->
+        <div class="col-lg-4">
+            <div class="card shadow-sm sticky-top" style="top: 20px;">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in cart.items.all %}
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>{{ item.product.name|truncatewords:3 }} x {{ item.quantity }}</span>
+                        <span>KES {{ item.subtotal|intcomma }}</span>
+                    </div>
+                    {% endfor %}
+                    <hr>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>KES {{ cart.subtotal|intcomma }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery</span>
+                        <span>{% if cart.delivery_fee > 0 %}KES {{ cart.delivery_fee|intcomma }}{% else %}Free{% endif %}</span>
+                    </div>
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold h5">
+                        <span>Total</span>
+                        <span class="text-primary">KES {{ cart.total|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

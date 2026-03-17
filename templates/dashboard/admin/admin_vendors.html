@@ -1,0 +1,172 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Manage Vendors | Admin{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse text-white">
+            <div class="position-sticky pt-3">
+                <h5 class="px-3 mb-3">Admin Panel</h5>
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'admin_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'admin_users' %}">
+                            <i class="bi bi-people"></i> Users
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active text-white" href="{% url 'admin_vendors' %}">
+                            <i class="bi bi-shop"></i> Vendors
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'admin_products' %}">
+                            <i class="bi bi-box-seam"></i> Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'admin_orders' %}">
+                            <i class="bi bi-bag"></i> Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-white" href="{% url 'home' %}">
+                            <i class="bi bi-arrow-left"></i> Back to Site
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">Manage Vendors</h1>
+            </div>
+            
+            <!-- Stats -->
+            <div class="row mb-4">
+                <div class="col-md-4">
+                    <div class="card bg-warning text-dark">
+                        <div class="card-body">
+                            <h5>Pending Verification</h5>
+                            <h3>{{ pending_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-success text-white">
+                        <div class="card-body">
+                            <h5>Verified Vendors</h5>
+                            <h3>{{ verified_count }}</h3>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-4">
+                    <div class="card bg-primary text-white">
+                        <div class="card-body">
+                            <h5>Total Vendors</h5>
+                            <h3>{{ vendors.count }}</h3>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Filter Tabs -->
+            <ul class="nav nav-tabs mb-4">
+                <li class="nav-item">
+                    <a class="nav-link {% if not request.GET.status %}active{% endif %}" href="{% url 'admin_vendors' %}">All</a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.GET.status == 'pending' %}active{% endif %}" href="{% url 'admin_vendors' %}?status=pending">
+                        Pending {% if pending_count > 0 %}<span class="badge bg-danger">{{ pending_count }}</span>{% endif %}
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link {% if request.GET.status == 'verified' %}active{% endif %}" href="{% url 'admin_vendors' %}?status=verified">Verified</a>
+                </li>
+            </ul>
+            
+            <!-- Vendors Table -->
+            <div class="card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Business</th>
+                                <th>Owner</th>
+                                <th>Contact</th>
+                                <th>Location</th>
+                                <th>Registration</th>
+                                <th>Status</th>
+                                <th>Joined</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for vendor in vendors %}
+                            <tr class="{% if not vendor.is_verified %}table-warning{% endif %}">
+                                <td>
+                                    <strong>{{ vendor.business_name }}</strong>
+                                </td>
+                                <td>{{ vendor.get_full_name }}</td>
+                                <td>
+                                    <small>{{ vendor.email }}</small><br>
+                                    <small class="text-muted">{{ vendor.phone_number }}</small>
+                                </td>
+                                <td>{{ vendor.location|default:"Not specified"|truncatewords:3 }}</td>
+                                <td><code>{{ vendor.business_registration }}</code></td>
+                                <td>
+                                    {% if vendor.is_verified %}
+                                        <span class="badge bg-success">Verified</span>
+                                    {% else %}
+                                        <span class="badge bg-warning">Pending</span>
+                                    {% endif %}
+                                    {% if not vendor.is_active %}
+                                        <span class="badge bg-secondary">Inactive</span>
+                                    {% endif %}
+                                </td>
+                                <td>{{ vendor.created_at|date:"M d, Y" }}</td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        {% if not vendor.is_verified %}
+                                        <a href="{% url 'verify_vendor' vendor.id %}" class="btn btn-success" onclick="return confirm('Approve {{ vendor.business_name }}?')">
+                                            <i class="bi bi-check-lg"></i>
+                                        </a>
+                                        <a href="{% url 'reject_vendor' vendor.id %}" class="btn btn-danger" onclick="return confirm('Reject {{ vendor.business_name }}?')">
+                                            <i class="bi bi-x-lg"></i>
+                                        </a>
+                                        {% else %}
+                                        <a href="{% url 'reject_vendor' vendor.id %}" class="btn btn-outline-danger btn-sm" onclick="return confirm('Deactivate {{ vendor.business_name }}?')">
+                                            Deactivate
+                                        </a>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="8" class="text-center py-4 text-muted">
+                                    {% if request.GET.status == 'pending' %}
+                                    No pending vendors to verify
+                                    {% else %}
+                                    No vendors found
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

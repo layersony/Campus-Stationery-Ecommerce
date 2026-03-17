@@ -1,0 +1,175 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}{% if current_category %}{{ current_category.name }}{% else %}All Products{% endif %} | Campus Stationery{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <!-- Breadcrumb -->
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            {% if current_category %}
+            <li class="breadcrumb-item active">{{ current_category.name }}</li>
+            {% else %}
+            <li class="breadcrumb-item active">All Products</li>
+            {% endif %}
+        </ol>
+    </nav>
+    
+    <div class="row">
+        <!-- Sidebar Filters -->
+        <div class="col-lg-3 mb-4">
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-funnel"></i> Filters</h5>
+                </div>
+                <div class="card-body">
+                    <form method="get">
+                        {% if request.GET.q %}
+                        <input type="hidden" name="q" value="{{ request.GET.q }}">
+                        {% endif %}
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Categories</label>
+                            <div class="list-group list-group-flush">
+                                <a href="{% url 'product_list' %}" class="list-group-item list-group-item-action {% if not current_category %}active{% endif %}">
+                                    All Categories
+                                </a>
+                                {% for cat in categories %}
+                                <a href="{% url 'category_detail' cat.slug %}" class="list-group-item list-group-item-action {% if current_category == cat.slug %}active{% endif %}">
+                                    {{ cat.name }}
+                                </a>
+                                {% endfor %}
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Price Range</label>
+                            <div class="row g-2">
+                                <div class="col-6">
+                                    <input type="number" name="min_price" class="form-control" placeholder="Min" value="{{ request.GET.min_price }}">
+                                </div>
+                                <div class="col-6">
+                                    <input type="number" name="max_price" class="form-control" placeholder="Max" value="{{ request.GET.max_price }}">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mb-3">
+                            <label class="form-label fw-bold">Sort By</label>
+                            <select name="sort" class="form-select" onchange="this.form.submit()">
+                                <option value="-created_at" {% if request.GET.sort == '-created_at' %}selected{% endif %}>Newest First</option>
+                                <option value="price_low" {% if request.GET.sort == 'price_low' %}selected{% endif %}>Price: Low to High</option>
+                                <option value="price_high" {% if request.GET.sort == 'price_high' %}selected{% endif %}>Price: High to Low</option>
+                                <option value="popular" {% if request.GET.sort == 'popular' %}selected{% endif %}>Most Popular</option>
+                            </select>
+                        </div>
+                        
+                        <button type="submit" class="btn btn-primary w-100">Apply Filters</button>
+                        {% if request.GET %}
+                        <a href="{% url 'product_list' %}" class="btn btn-outline-secondary w-100 mt-2">Clear All</a>
+                        {% endif %}
+                    </form>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Product Grid -->
+        <div class="col-lg-9">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h4 class="mb-0">
+                    {% if current_category %}{{ current_category.name }}{% else %}All Products{% endif %}
+                    <small class="text-muted">({{ page_obj.paginator.count }} items)</small>
+                </h4>
+            </div>
+            
+            <div class="row g-4">
+                {% for product in products %}
+                <div class="col-6 col-md-4">
+                    <div class="card h-100 product-card border-0 shadow-sm">
+                        <div class="position-relative">
+                            {% if product.image %}
+                                <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                            {% else %}
+                                <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                                    <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                                </div>
+                            {% endif %}
+                            {% if product.discount_price %}
+                                <span class="badge bg-danger position-absolute top-0 start-0 m-2">-{{ product.discount_percentage }}%</span>
+                            {% endif %}
+                            {% if product.stock_status == 'low_stock' %}
+                                <span class="badge bg-warning position-absolute top-0 end-0 m-2">Low Stock</span>
+                            {% endif %}
+                        </div>
+                        <div class="card-body d-flex flex-column">
+                            <small class="text-muted">{{ product.category.name }}</small>
+                            <h5 class="card-title">{{ product.name|truncatewords:3 }}</h5>
+                            <br>
+                            <a href="{{ product.get_absolute_url }}" class="btn btn-sm btn-primary">View</a>
+                            <br>
+                            <div class="mt-auto">
+                                <div class="d-flex justify-content-between align-items-center">
+                                    <div>
+                                        {% if product.discount_price %}
+                                            <span class="text-decoration-line-through text-muted small">KES {{ product.price|intcomma }}</span>
+                                            <br>
+                                            <span class="fw-bold text-danger">KES {{ product.current_price|intcomma }}</span>
+                                        {% else %}
+                                            <span class="fw-bold text-primary">KES {{ product.price|intcomma }}</span>
+                                        {% endif %}
+                                    </div>
+                                    <div class="btn-group">
+                                        <a href="{% url 'toggle_wishlist' product.id %}" class="btn btn-sm btn-outline-danger">
+                                            <i class="bi bi-heart"></i>
+                                        </a>
+                                        <a href="{% url 'add_to_cart' product.id %}" class="btn btn-sm btn-primary {% if not product.is_available %}disabled{% endif %}">
+                                            <i class="bi bi-cart-plus"></i>
+                                        </a>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-search" style="font-size: 4rem; color: #ddd;"></i>
+                    <h4 class="mt-3">No products found</h4>
+                    <p class="text-muted">Try adjusting your filters or search query.</p>
+                    <a href="{% url 'product_list' %}" class="btn btn-primary">View All Products</a>
+                </div>
+                {% endfor %}
+            </div>
+            
+            <!-- Pagination -->
+            {% if is_paginated %}
+            <nav aria-label="Page navigation" class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Previous</a>
+                    </li>
+                    {% endif %}
+                    
+                    {% for num in page_obj.paginator.page_range %}
+                        {% if page_obj.number == num %}
+                        <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                        {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                        <li class="page-item"><a class="page-link" href="?page={{ num }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">{{ num }}</a></li>
+                        {% endif %}
+                    {% endfor %}
+                    
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}{% for key, value in request.GET.items %}{% if key != 'page' %}&{{ key }}={{ value }}{% endif %}{% endfor %}">Next</a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+    </div>
+</div>
+{% endblock %}

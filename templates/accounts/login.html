@@ -1,0 +1,77 @@
+{% extends 'base.html' %}
+{% load crispy_forms_tags %}
+
+{% block title %}Login | Campus Stationery{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6 col-lg-5">
+            <div class="card shadow">
+                <div class="card-header bg-primary text-white text-center py-3">
+                    <h4 class="mb-0"><i class="bi bi-box-arrow-in-right"></i> Login</h4>
+                </div>
+                <div class="card-body p-4">
+                    {% if form.errors %}
+                    <div class="alert alert-danger">
+                        <i class="bi bi-exclamation-triangle"></i> Your username and password didn't match. Please try again.
+                    </div>
+                    {% endif %}
+                    
+                    {% if next %}
+                        {% if user.is_authenticated %}
+                        <div class="alert alert-warning">
+                            Your account doesn't have access to this page. To proceed, please login with an account that has access.
+                        </div>
+                        {% else %}
+                        <div class="alert alert-info">
+                            Please login to see this page.
+                        </div>
+                        {% endif %}
+                    {% endif %}
+                    
+                    <form method="post" action="{% url 'login' %}">
+                        {% csrf_token %}
+                        {{ form|crispy }}
+                        
+                        <input type="hidden" name="next" value="{{ next }}">
+                        
+                        <div class="d-grid gap-2 mt-4">
+                            <button type="submit" class="btn btn-primary btn-lg">
+                                <i class="bi bi-box-arrow-in-right"></i> Login
+                            </button>
+                        </div>
+                    </form>
+                    
+                    <div class="text-center mt-3">
+                        <a href="{% url 'password_reset' %}" class="text-decoration-none">
+                            <i class="bi bi-key"></i> Forgot your password?
+                        </a>
+                    </div>
+                    
+                    <hr class="my-4">
+                    
+                    <div class="text-center">
+                        <p class="mb-2">Don't have an account?</p>
+                        <div class="d-grid gap-2">
+                            <a href="{% url 'register_student' %}" class="btn btn-outline-primary">
+                                <i class="bi bi-person-plus"></i> Register as Student
+                            </a>
+                            <a href="{% url 'register_vendor' %}" class="btn btn-outline-warning">
+                                <i class="bi bi-shop"></i> Register as Vendor
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Quick Info -->
+            <div class="text-center mt-4 text-muted">
+                <small>
+                    <i class="bi bi-shield-check"></i> Secure login with encrypted connection
+                </small>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

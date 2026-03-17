@@ -1,0 +1,165 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Campus Stationery - Your Academic Supplies Store{% endblock %}
+
+{% block content %}
+<!-- Hero Section -->
+<section class="hero-section py-5">
+    <div class="container">
+        <div class="row align-items-center">
+            <div class="col-lg-6">
+                <h1 class="display-4 fw-bold mb-3">Campus Stationery</h1>
+                <p class="lead mb-4">Your one-stop shop for all academic supplies. Browse, order, and get delivered to your hostel or classroom.</p>
+                <div class="d-flex gap-2">
+                    <a href="{% url 'product_list' %}" class="btn btn-light btn-lg">
+                        <i class="bi bi-shop"></i> Shop Now
+                    </a>
+                    {% if not user.is_authenticated %}
+                    <a href="{% url 'register_student' %}" class="btn btn-outline-light btn-lg">
+                        <i class="bi bi-person-plus"></i> Join Now
+                    </a>
+                    {% endif %}
+                </div>
+            </div>
+            <div class="col-lg-6 text-center">
+                <i class="bi bi-bag-check" style="font-size: 12rem; opacity: 0.3;"></i>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- Categories -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <h2 class="text-center mb-4">Shop by Category</h2>
+        <div class="row g-4">
+            {% for category in categories %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <a href="{% url 'category_detail' category.slug %}" class="text-decoration-none">
+                    <div class="card h-100 text-center border-0 shadow-sm hover-card">
+                        <div class="card-body">
+                            <i class="bi {{ category.icon }} text-primary" style="font-size: 3rem;"></i>
+                            <h5 class="card-title mt-3 text-dark">{{ category.name }}</h5>
+                            <p class="card-text small text-muted">{{ category.description|truncatewords:10 }}</p>
+                        </div>
+                    </div>
+                </a>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <p class="text-muted">No categories available yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Featured Products -->
+<section class="py-5">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>Featured Products</h2>
+            <a href="{% url 'product_list' %}" class="btn btn-outline-primary">View All</a>
+        </div>
+        <div class="row g-4">
+            {% for product in featured_products %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100 product-card border-0 shadow-sm">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                    {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <span class="badge bg-secondary mb-2">{{ product.category.name }}</span>
+                        <h5 class="card-title">{{ product.name|truncatewords:4 }}</h5>
+                        <div class="d-flex justify-content-between align-items-center mt-3">
+                            <div>
+                                {% if product.discount_price %}
+                                    <span class="text-decoration-line-through text-muted small">KES {{ product.price|intcomma }}</span>
+                                    <br>
+                                    <span class="fw-bold text-danger">KES {{ product.current_price|intcomma }}</span>
+                                {% else %}
+                                    <span class="fw-bold text-primary">KES {{ product.price|intcomma }}</span>
+                                {% endif %}
+                            </div>
+                            <a href="{% url 'add_to_cart' product.id %}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-cart-plus"></i>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <p class="text-muted">No featured products available.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- New Arrivals -->
+<section class="py-5 bg-light">
+    <div class="container">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2>New Arrivals</h2>
+            <a href="{% url 'product_list' %}?sort=-created_at" class="btn btn-outline-primary">View All</a>
+        </div>
+        <div class="row g-4">
+            {% for product in new_arrivals %}
+            <div class="col-6 col-md-4 col-lg-3">
+                <div class="card h-100 product-card border-0 shadow-sm">
+                    {% if product.image %}
+                        <img src="{{ product.image.url }}" class="card-img-top" alt="{{ product.name }}" style="height: 200px; object-fit: cover;">
+                        <span class="badge bg-success position-absolute top-0 end-0 m-2">New</span>
+                    {% else %}
+                        <div class="bg-light d-flex align-items-center justify-content-center" style="height: 200px;">
+                            <i class="bi bi-image text-muted" style="font-size: 3rem;"></i>
+                        </div>
+                    {% endif %}
+                    <div class="card-body">
+                        <h5 class="card-title">{{ product.name|truncatewords:4 }}</h5>
+                        <p class="card-text text-muted small">{{ product.description|truncatewords:8 }}</p>
+                        <div class="d-flex justify-content-between align-items-center mt-auto">
+                            <span class="fw-bold text-primary">KES {{ product.current_price|intcomma }}</span>
+                            <a href="{{ product.get_absolute_url }}" class="btn btn-sm btn-primary">View</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center">
+                <p class="text-muted">No new arrivals yet.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- Features -->
+<section class="py-5">
+    <div class="container">
+        <div class="row g-4 text-center">
+            <div class="col-md-4">
+                <i class="bi bi-truck text-primary" style="font-size: 3rem;"></i>
+                <h4 class="mt-3">Campus Delivery</h4>
+                <p class="text-muted">Fast delivery to your hostel or classroom</p>
+            </div>
+            <div class="col-md-4">
+                <i class="bi bi-shield-check text-primary" style="font-size: 3rem;"></i>
+                <h4 class="mt-3">Secure Payment</h4>
+                <p class="text-muted">Pay safely with M-Pesa</p>
+            </div>
+            <div class="col-md-4">
+                <i class="bi bi-clock text-primary" style="font-size: 3rem;"></i>
+                <h4 class="mt-3">24/7 Available</h4>
+                <p class="text-muted">Order anytime, anywhere</p>
+            </div>
+        </div>
+    </div>
+</section>
+{% endblock %}

@@ -1,0 +1,102 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}My Orders | Campus Stationery{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    
+
+    {% if is_vendor_view %}
+        <h2 class="mb-4"><i class="bi bi-bag"></i> Client Orders</h2>
+        <div class="alert alert-info">
+            <i class="bi bi-shop"></i> Viewing orders containing your products
+        </div>
+    {% else %}
+        <h2 class="mb-4"><i class="bi bi-bag"></i> My Orders</h2>
+    {% endif %}
+    
+    {% if orders %}
+    <div class="card shadow-sm">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Order #</th>
+                        <th>Date</th>
+                        <th>Items</th>
+                        <th>Total</th>
+                        <th>Status</th>
+                        <th>Payment</th>
+                        <th>Action</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for order in orders %}
+                    <tr>
+                        <td>
+                            <a href="{{ order.get_absolute_url }}" class="fw-bold text-decoration-none">
+                                {{ order.order_number }}
+                            </a>
+                        </td>
+                        <td>{{ order.created_at|date:"M d, Y" }}</td>
+                        <td>{{ order.items.count }} item{{ order.items.count|pluralize }}</td>
+                        <td>KES {{ order.total|intcomma }}</td>
+                        <td>
+                            <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% elif order.status == 'pending' %}warning{% else %}info{% endif %}">
+                                {{ order.get_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <span class="badge bg-{% if order.payment_status == 'paid' %}success{% elif order.payment_status == 'failed' %}danger{% else %}warning{% endif %}">
+                                {{ order.get_payment_status_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <a href="{{ order.get_absolute_url }}" class="btn btn-sm btn-outline-primary">
+                                <i class="bi bi-eye"></i> View
+                            </a>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+    
+    {% if is_paginated %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-center">
+            {% if page_obj.has_previous %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.previous_page_number }}">Previous</a>
+            </li>
+            {% endif %}
+            {% for num in page_obj.paginator.page_range %}
+                {% if page_obj.number == num %}
+                <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                {% elif num > page_obj.number|add:'-3' and num < page_obj.number|add:'3' %}
+                <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                {% endif %}
+            {% endfor %}
+            {% if page_obj.has_next %}
+            <li class="page-item">
+                <a class="page-link" href="?page={{ page_obj.next_page_number }}">Next</a>
+            </li>
+            {% endif %}
+        </ul>
+    </nav>
+    {% endif %}
+    
+    {% else %}
+    <div class="text-center py-5">
+        <i class="bi bi-bag-x" style="font-size: 5rem; color: #ddd;"></i>
+        <h4 class="mt-3">No orders yet</h4>
+        <p class="text-muted">You haven't placed any orders yet.</p>
+        <a href="{% url 'product_list' %}" class="btn btn-primary btn-lg">
+            <i class="bi bi-shop"></i> Start Shopping
+        </a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

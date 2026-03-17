@@ -1,0 +1,122 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}My Products | Campus Stationery{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-4">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+            <div class="position-sticky pt-3">
+                <ul class="nav flex-column">
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'vendor_dashboard' %}">
+                            <i class="bi bi-speedometer2"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link active" href="{% url 'vendor_products' %}">
+                            <i class="bi bi-box-seam"></i> Products
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'order_list' %}">
+                            <i class="bi bi-bag"></i> Orders
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="{% url 'profile' %}">
+                            <i class="bi bi-person"></i> Profile
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+        
+        <!-- Main Content -->
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+            <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                <h1 class="h2">My Products</h1>
+                <a href="{% url 'add_product' %}" class="btn btn-primary">
+                    <i class="bi bi-plus"></i> Add New Product
+                </a>
+            </div>
+            
+            <div class="card shadow-sm">
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th>Category</th>
+                                <th>Price</th>
+                                <th>Stock</th>
+                                <th>Status</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in products %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if product.image %}
+                                            <img src="{{ product.image.url }}" class="rounded" style="width: 50px; height: 50px; object-fit: cover;">
+                                        {% else %}
+                                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 50px; height: 50px;">
+                                                <i class="bi bi-image text-muted"></i>
+                                            </div>
+                                        {% endif %}
+                                        <div class="ms-3">
+                                            <h6 class="mb-0">{{ product.name }}</h6>
+                                            <small class="text-muted">SKU: {{ product.sku }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>{{ product.category.name }}</td>
+                                <td>
+                                    {% if product.discount_price %}
+                                        <span class="text-decoration-line-through text-muted">KES {{ product.price|intcomma }}</span>
+                                        <br><span class="text-danger">KES {{ product.current_price|intcomma }}</span>
+                                    {% else %}
+                                        KES {{ product.price|intcomma }}
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if product.stock_quantity > 10 %}success{% elif product.stock_quantity > 0 %}warning{% else %}danger{% endif %}">
+                                        {{ product.stock_quantity }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <span class="badge bg-{% if product.is_available %}success{% else %}secondary{% endif %}">
+                                        {% if product.is_available %}Active{% else %}Inactive{% endif %}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div class="btn-group btn-group-sm">
+                                        <a href="{% url 'edit_product' product.id %}" class="btn btn-outline-primary">
+                                            <i class="bi bi-pencil"></i>
+                                        </a>
+                                        <a href="{% url 'delete_product' product.id %}" class="btn btn-outline-danger" onclick="return confirm('Delete this product?')">
+                                            <i class="bi bi-trash"></i>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="6" class="text-center py-4">
+                                    <i class="bi bi-box" style="font-size: 3rem; color: #ddd;"></i>
+                                    <p class="mt-2 text-muted">No products yet. <a href="{% url 'add_product' %}">Add your first product</a></p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

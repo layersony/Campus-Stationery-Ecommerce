@@ -1,0 +1,420 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Order #{{ order.order_number }} | Campus Stationery{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+    <nav aria-label="breadcrumb" class="mb-4">
+        <ol class="breadcrumb">
+            <li class="breadcrumb-item"><a href="{% url 'home' %}">Home</a></li>
+            {% if request.user.is_vendor %}
+            <li class="breadcrumb-item"><a href="{% url 'vendor_dashboard' %}">Orders</a></li>
+            {% else %}
+            <li class="breadcrumb-item"><a href="{% url 'order_list' %}">My Orders</a></li>
+            {% endif %}
+            <li class="breadcrumb-item active">{{ order.order_number }}</li>
+        </ol>
+    </nav>
+
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h2 class="mb-1">Order {{ order.order_number }}</h2>
+            <p class="text-muted mb-0">Placed on {{ order.created_at|date:"F d, Y at H:i" }}</p>
+        </div>
+        <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% elif order.status == 'pending' %}warning{% else %}info{% endif %} fs-6">
+            {{ order.get_status_display }}
+        </span>
+    </div>
+
+    <!-- Vendor Status Update Panel -->
+    {% if request.user.is_vendor %}
+    <div class="card shadow-sm mb-4 border-primary">
+        <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
+            <i class="bi bi-shield-lock"></i>
+            <h6 class="mb-0">Vendor Controls</h6>
+        </div>
+        <div class="card-body">
+            {% if order.status == 'cancelled' or order.status == 'delivered' or order.status == 'refunded' %}
+            <p class="text-muted mb-0">
+                <i class="bi bi-info-circle"></i>
+                This order is <strong>{{ order.get_status_display }}</strong> — no further actions available.
+            </p>
+            {% else %}
+            <p class="text-muted mb-2 small">Move this order to the next stage:</p>
+            <div class="d-flex flex-wrap gap-2">
+
+                {% if order.status == 'pending' %}
+                <form method="post" action="{% url 'update_order_status' order.order_number %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="confirmed">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-success btn-sm">
+                        <i class="bi bi-check-lg"></i> Accept Order
+                    </button>
+                </form>
+                <form method="post" action="{% url 'update_order_status' order.order_number %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="cancelled">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-outline-danger btn-sm"
+                        onclick="return confirm('Are you sure you want to cancel order {{ order.order_number }}?')">
+                        <i class="bi bi-x-lg"></i> Decline Order
+                    </button>
+                </form>
+
+                {% elif order.status == 'confirmed' %}
+                <form method="post" action="{% url 'update_order_status' order.order_number %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="processing">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-primary btn-sm">
+                        <i class="bi bi-gear"></i> Mark as Processing
+                    </button>
+                </form>
+
+                {% elif order.status == 'processing' %}
+                <form method="post" action="{% url 'update_order_status' order.order_number %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="shipped">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button type="submit" class="btn btn-info btn-sm text-white">
+                        <i class="bi bi-truck"></i> Mark as Shipped
+                    </button>
+                </form>
+
+                {% elif order.status == 'shipped' %}
+                <form method="post" action="{% url 'update_order_status' order.order_number %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="status" value="delivered">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <button {% if order.payment_status != 'paid' %}disabled{% else %}type="submit"{% endif %} class="btn btn-success btn-sm">
+                        <i class="bi bi-house-check"></i> Mark as Delivered
+                    </button>
+                </form>
+                {% endif %}
+
+            </div>
+            {% endif %}
+
+            {% if request.user.is_vendor and order.payment_method == 'mpesa' and order.payment_status == 'pending' and order.status == 'shipped' %}
+            <div class="mt-3 pt-3 border-top">
+                <p class="text-muted small mb-2"><i class="bi bi-phone"></i> M-Pesa payment not yet confirmed:</p>
+                <div class="d-flex gap-2">
+                    <form method="post" action="{% url 'update_payment_status' order.order_number %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="payment_status" value="paid">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="btn btn-success btn-sm">
+                            <i class="bi bi-check-lg"></i> Mark Payment Received
+                        </button>
+                    </form>
+                    <form method="post" action="{% url 'update_payment_status' order.order_number %}">
+                        {% csrf_token %}
+                        <input type="hidden" name="payment_status" value="failed">
+                        <input type="hidden" name="next" value="{{ request.path }}">
+                        <button type="submit" class="btn btn-outline-danger btn-sm"
+                            onclick="return confirm('Mark this M-Pesa payment as failed?')">
+                            <i class="bi bi-x-lg"></i> Mark as Failed
+                        </button>
+                    </form>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+
+    <!-- Order Progress -->
+    <div class="card shadow-sm mb-4">
+        <div class="card-body">
+
+            {% if order.status == 'cancelled' %}
+            <div class="text-center py-2">
+                <i class="bi bi-x-circle-fill text-danger" style="font-size: 2rem;"></i>
+                <p class="text-danger fw-bold mb-0 mt-2">This order has been cancelled</p>
+            </div>
+
+            {% elif order.status == 'refunded' %}
+            <div class="text-center py-2">
+                <i class="bi bi-arrow-counterclockwise text-info" style="font-size: 2rem;"></i>
+                <p class="text-info fw-bold mb-0 mt-2">This order has been refunded</p>
+            </div>
+
+            {% else %}
+            {% with status=order.status %}
+            <div class="position-relative">
+                <div class="progress mb-3" style="height: 4px;">
+                    <div class="progress-bar bg-success" style="width:
+                        {% if status == 'pending' %}10%
+                        {% elif status == 'confirmed' %}30%
+                        {% elif status == 'processing' %}55%
+                        {% elif status == 'shipped' %}78%
+                        {% elif status == 'delivered' %}100%
+                        {% else %}0%{% endif %};">
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-between">
+
+                    <!-- Step 1: Ordered -->
+                    <div class="text-center" style="width: 20%;">
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-success text-white" style="width:32px; height:32px;">
+                            <i class="bi bi-check-lg" style="font-size:14px;"></i>
+                        </div>
+                        <small class="d-block text-success fw-semibold">Ordered</small>
+                        <small class="d-block text-muted" style="font-size:0.7rem;">{{ order.created_at|date:"M d, g:i a" }}</small>
+                    </div>
+
+                    <!-- Step 2: Confirmed -->
+                    <div class="text-center" style="width: 20%;">
+                        {% if status == 'confirmed' or status == 'processing' or status == 'shipped' or status == 'delivered' %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-success text-white" style="width:32px; height:32px;">
+                            <i class="bi bi-check-lg" style="font-size:14px;"></i>
+                        </div>
+                        <small class="d-block text-success fw-semibold">Confirmed</small>
+                        {% else %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-light border" style="width:32px; height:32px;">
+                            <span class="text-secondary" style="font-size:13px;">2</span>
+                        </div>
+                        <small class="d-block text-muted">Confirmed</small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Step 3: Processing -->
+                    <div class="text-center" style="width: 20%;">
+                        {% if status == 'processing' or status == 'shipped' or status == 'delivered' %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-success text-white" style="width:32px; height:32px;">
+                            <i class="bi bi-check-lg" style="font-size:14px;"></i>
+                        </div>
+                        <small class="d-block text-success fw-semibold">Processing</small>
+                        {% elif status == 'confirmed' %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-warning" style="width:32px; height:32px;">
+                            <i class="bi bi-gear-fill text-dark" style="font-size:13px;"></i>
+                        </div>
+                        <small class="d-block text-warning fw-semibold">Processing</small>
+                        {% else %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-light border" style="width:32px; height:32px;">
+                            <span class="text-secondary" style="font-size:13px;">3</span>
+                        </div>
+                        <small class="d-block text-muted">Processing</small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Step 4: Shipped -->
+                    <div class="text-center" style="width: 20%;">
+                        {% if status == 'shipped' or status == 'delivered' %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-success text-white" style="width:32px; height:32px;">
+                            <i class="bi bi-check-lg" style="font-size:14px;"></i>
+                        </div>
+                        <small class="d-block text-success fw-semibold">Shipped</small>
+                        {% elif status == 'processing' %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-info" style="width:32px; height:32px;">
+                            <i class="bi bi-truck text-white" style="font-size:13px;"></i>
+                        </div>
+                        <small class="d-block text-info fw-semibold">Shipped</small>
+                        {% else %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-light border" style="width:32px; height:32px;">
+                            <span class="text-secondary" style="font-size:13px;">4</span>
+                        </div>
+                        <small class="d-block text-muted">Shipped</small>
+                        {% endif %}
+                    </div>
+
+                    <!-- Step 5: Delivered -->
+                    <div class="text-center" style="width: 20%;">
+                        {% if status == 'delivered' %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-success text-white" style="width:32px; height:32px;">
+                            <i class="bi bi-house-check-fill" style="font-size:14px;"></i>
+                        </div>
+                        <small class="d-block text-success fw-semibold">Delivered</small>
+                        {% if order.delivered_at %}
+                        <small class="d-block text-muted" style="font-size:0.7rem;">{{ order.delivered_at|date:"M d, g:i a" }}</small>
+                        {% endif %}
+                        {% elif status == 'shipped' %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-light border border-success" style="width:32px; height:32px;">
+                            <i class="bi bi-house text-success" style="font-size:13px;"></i>
+                        </div>
+                        <small class="d-block text-muted">Delivered</small>
+                        {% else %}
+                        <div class="rounded-circle mx-auto mb-1 d-flex align-items-center justify-content-center bg-light border" style="width:32px; height:32px;">
+                            <span class="text-secondary" style="font-size:13px;">5</span>
+                        </div>
+                        <small class="d-block text-muted">Delivered</small>
+                        {% endif %}
+                    </div>
+
+                </div>
+            </div>
+            {% endwith %}
+            {% endif %}
+
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-lg-8">
+            <!-- Order Items -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Order Items</h5>
+                </div>
+                <div class="card-body">
+                    {% for item in order.items.all %}
+                    <div class="d-flex align-items-center mb-3 pb-3 {% if not forloop.last %}border-bottom{% endif %}">
+                        {% if item.product and item.product.image %}
+                            <img src="{{ item.product.image.url }}" class="rounded" style="width: 80px; height: 80px; object-fit: cover;" alt="{{ item.product_name }}">
+                        {% else %}
+                            <div class="bg-light rounded d-flex align-items-center justify-content-center" style="width: 80px; height: 80px;">
+                                <i class="bi bi-image text-muted"></i>
+                            </div>
+                        {% endif %}
+                        <div class="ms-3 flex-grow-1">
+                            <h6 class="mb-1">{{ item.product_name }}</h6>
+                            <small class="text-muted">Qty: {{ item.quantity }}</small>
+                        </div>
+                        <div class="text-end">
+                            <p class="fw-bold mb-0">KES {{ item.subtotal|intcomma }}</p>
+                            <small class="text-muted">KES {{ item.product_price|intcomma }} each</small>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            {% if order.notes %}
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Order Notes</h5>
+                </div>
+                <div class="card-body">
+                    <p class="mb-0">{{ order.notes }}</p>
+                </div>
+            </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-4">
+            <!-- Delivery Info -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-geo-alt"></i> Delivery Address</h5>
+                </div>
+                <div class="card-body">
+                    {% if order.address %}
+                    <p class="mb-1 fw-bold">{{ order.address.name }}</p>
+                    <p class="mb-1"><i class="bi bi-telephone"></i> {{ order.address.phone }}</p>
+                    {% if order.address.hostel_block %}
+                    <p class="mb-1">Hostel {{ order.address.hostel_block }}, Room {{ order.address.room_number }}</p>
+                    {% endif %}
+                    <p class="mb-0">{{ order.address.campus_building }}</p>
+                    {% else %}
+                    <p class="text-muted">No address information</p>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Payment Info -->
+            <div class="card shadow-sm mb-4">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0"><i class="bi bi-credit-card"></i> Payment</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Method</span>
+                        {% if order.payment_method == 'mpesa' %}
+                            <span class="badge bg-success">
+                                <i class="bi bi-phone"></i> M-Pesa
+                            </span>
+                        {% elif order.payment_method == 'cod' %}
+                            <span class="badge bg-warning text-dark">
+                                <i class="bi bi-cash-coin"></i> Cash on Delivery
+                            </span>
+                        {% endif %}
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Status</span>
+                        {% if order.payment_method == 'cod' and order.payment_status != 'paid' %}
+                            <span class="badge bg-warning text-dark">Pay on Delivery</span>
+                        {% elif order.payment_status == 'paid' %}
+                            <span class="badge bg-success">Paid</span>
+                        {% elif order.payment_status == 'failed' %}
+                            <span class="badge bg-danger">Failed</span>
+                        {% elif order.payment_status == 'refunded' %}
+                            <span class="badge bg-info">Refunded</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pending</span>
+                        {% endif %}
+                    </div>
+
+                    {% if order.payment_method == 'cod' and order.status != 'delivered' and user.is_student and order.payment_status != 'paid' %}
+                    <div class="alert alert-warning py-2 mb-0 mt-2">
+                        <small><i class="bi bi-info-circle"></i> Please have <strong>KES {{ order.total|intcomma }}</strong> ready for the delivery agent.</small>
+                    </div>
+                    {% endif %}
+
+                    {% if order.payment.mpesa_receipt_number %}
+                    <div class="mt-2 pt-2 border-top">
+                        <small class="text-muted"><i class="bi bi-receipt"></i> M-Pesa Receipt: <strong>{{ order.payment.mpesa_receipt_number }}</strong></small>
+                    </div>
+
+                    {% endif %}
+
+                    {% if request.user.is_vendor and order.payment_method == 'cod' and order.status == 'shipped' and order.payment_status != 'paid' %}
+                    <div class="mt-3 pt-3 border-top">
+                        <p class="text-muted small mb-2"><i class="bi bi-phone"></i> Cash on Delivery payment not yet confirmed:</p>
+                        <div class="d-flex gap-2">
+                            <form method="post" action="{% url 'update_payment_status' order.order_number %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="payment_status" value="paid">
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit" class="btn btn-success btn-sm">
+                                    <i class="bi bi-check-lg"></i> Mark Payment Received
+                                </button>
+                            </form>
+                            <form method="post" action="{% url 'update_payment_status' order.order_number %}">
+                                {% csrf_token %}
+                                <input type="hidden" name="payment_status" value="failed">
+                                <input type="hidden" name="next" value="{{ request.path }}">
+                                <button type="submit" class="btn btn-outline-danger btn-sm"
+                                    onclick="return confirm('Mark this Cash on Delivery payment as failed?')">
+                                    <i class="bi bi-x-lg"></i> Mark as Failed
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Order Summary -->
+            <div class="card shadow-sm">
+                <div class="card-header bg-white">
+                    <h5 class="mb-0">Order Summary</h5>
+                </div>
+                <div class="card-body">
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Subtotal</span>
+                        <span>KES {{ order.subtotal|intcomma }}</span>
+                    </div>
+                    <div class="d-flex justify-content-between mb-2">
+                        <span>Delivery Fee</span>
+                        <span>KES {{ order.delivery_fee|intcomma }}</span>
+                    </div>
+                    {% if order.discount > 0 %}
+                    <div class="d-flex justify-content-between mb-2 text-success">
+                        <span>Discount</span>
+                        <span>-KES {{ order.discount|intcomma }}</span>
+                    </div>
+                    {% endif %}
+                    <hr>
+                    <div class="d-flex justify-content-between fw-bold h5">
+                        <span>Total</span>
+                        <span class="text-primary">KES {{ order.total|intcomma }}</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
