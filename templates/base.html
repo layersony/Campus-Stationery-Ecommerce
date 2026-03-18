@@ -45,16 +45,6 @@
             </button>
             <div class="collapse navbar-collapse" id="navbarNav">
                 <ul class="navbar-nav me-auto">
-                    <!-- <li class="nav-item dropdown">
-                        <a class="nav-link dropdown-toggle" href="#" data-bs-toggle="dropdown">Categories</a>
-                        <ul class="dropdown-menu">
-                            {% for cat in nav_categories %}
-                            <li><a class="dropdown-item" href="{% url 'category_detail' cat.slug %}">
-                                <i class="bi {{ cat.icon }}"></i> {{ cat.name }}
-                            </a></li>
-                            {% endfor %}
-                        </ul>
-                    </li> -->
                     <li class="nav-item"><a class="nav-link" href="{% url 'product_list' %}">All Products</a></li>
                 </ul>
                 
@@ -121,7 +111,7 @@
     {% block content %}{% endblock %}
 
     <!-- Footer -->
-    <footer class="bg-dark text-light py-5 mt-5">
+    <footer class="bg-dark text-light py-5">
         <div class="container">
             <div class="row gy-4">
 
@@ -139,7 +129,6 @@
                     <ul class="list-unstyled">
                         <li><a href="{% url 'home' %}" class="text-decoration-none text-light">Home</a></li>
                         <li><a href="{% url 'product_list' %}" class="text-decoration-none text-light">Products</a></li>
-                        <li><a href="#" class="text-decoration-none text-light">About Us</a></li>
                         <li><a href="#" class="text-decoration-none text-light">Contact</a></li>
                     </ul>
                 </div>

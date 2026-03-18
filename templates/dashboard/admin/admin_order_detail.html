@@ -4,7 +4,7 @@
 {% block title %}Order {{ order.order_number }} | Admin{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
         <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse text-white">
@@ -46,7 +46,7 @@
         </div>
 
         <!-- Main Content -->
-        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 mb-5">
             <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
                 <div>
                     <h1 class="h2">Order {{ order.order_number }}</h1>
