@@ -52,9 +52,9 @@
                     <a href="{% url 'toggle_wishlist' product.id %}" class="btn btn-outline-danger {% if in_wishlist %}active{% endif %}">
                         <i class="bi bi-heart{% if in_wishlist %}-fill{% endif %}"></i>
                     </a>
-                    <button class="btn btn-outline-secondary" onclick="window.print()">
-                        <i class="bi bi-printer"></i>
-                    </button>
+                    <a href="{% url 'cart' %}" class="btn btn-outline-secondary">
+                        View Cart
+                    </a>
                 </div>
             </div>
             

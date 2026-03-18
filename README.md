@@ -33,7 +33,7 @@ python manage.py createsuperuser
 
 ### 5. Seed Categories:
 ```bash
-python manage.py seed_categories
+python manage.py seed_data
 ```
 
 ### 6. Run Development Server:
