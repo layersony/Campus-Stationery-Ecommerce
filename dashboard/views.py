@@ -8,6 +8,8 @@ from datetime import timedelta
 from products.models import Product, Category
 from orders.models import Order, OrderItem
 from accounts.models import User
+from django.utils.decorators import method_decorator
+from django.views.generic import ListView
 
 def vendor_required(view_func):
     return user_passes_test(lambda u: u.is_vendor or u.is_staff)(view_func)
@@ -98,7 +100,7 @@ def add_product(request):
             messages.error(request, f'Error adding product: {str(e)}')
     
     categories = Category.objects.filter(is_active=True)
-    return render(request, 'dashboard/admin/add_product.html', {'categories': categories})
+    return render(request, 'dashboard/add_product.html', {'categories': categories})
 
 @login_required
 @vendor_required
@@ -132,6 +134,26 @@ def delete_product(request, product_id):
     product.delete()
     messages.success(request, 'Product deleted successfully!')
     return redirect('vendor_products')
+
+class VendorOrderListView(ListView):
+    model = Order
+    template_name = 'dashboard/vendor_orders.html'
+    context_object_name = 'orders'
+    paginate_by = 10
+
+    @method_decorator([login_required, vendor_required])
+    def dispatch(self, *args, **kwargs):
+        return super().dispatch(*args, **kwargs)
+    
+    def get_queryset(self):
+        return Order.objects.filter(
+            items__product__vendor=self.request.user
+        ).distinct().order_by('-created_at')
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['is_vendor_view'] = True
+        return context
 
 # Admin Dashboard
 

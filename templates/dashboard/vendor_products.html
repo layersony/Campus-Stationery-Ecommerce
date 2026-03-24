@@ -4,29 +4,29 @@
 {% block title %}My Products | Campus Stationery{% endblock %}
 
 {% block content %}
-<div class="container-fluid py-4">
+<div class="container-fluid">
     <div class="row">
         <!-- Sidebar -->
-        <div class="col-md-3 col-lg-2 d-md-block bg-light sidebar collapse">
+        <div class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse">
             <div class="position-sticky pt-3">
                 <ul class="nav flex-column">
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'vendor_dashboard' %}">
+                        <a class="nav-link text-white" href="{% url 'vendor_dashboard' %}">
                             <i class="bi bi-speedometer2"></i> Dashboard
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link active" href="{% url 'vendor_products' %}">
+                        <a class="nav-link text-white active" href="{% url 'vendor_products' %}">
                             <i class="bi bi-box-seam"></i> Products
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'order_list' %}">
+                        <a class="nav-link text-white" href="{% url 'vendor_orders' %}">
                             <i class="bi bi-bag"></i> Orders
                         </a>
                     </li>
                     <li class="nav-item">
-                        <a class="nav-link" href="{% url 'profile' %}">
+                        <a class="nav-link text-white" href="{% url 'profile' %}">
                             <i class="bi bi-person"></i> Profile
                         </a>
                     </li>

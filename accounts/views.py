@@ -1,15 +1,39 @@
 from django.shortcuts import render, redirect, get_object_or_404
-from django.contrib.auth import login, logout
+from django.contrib.auth import login, logout, authenticate
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.views.generic import CreateView, UpdateView
-from django.urls import reverse_lazy
 from django.contrib.auth.forms import PasswordChangeForm
 from django.contrib.auth import update_session_auth_hash
 
-from .forms import ProfileEditForm, StudentRegistrationForm, VendorRegistrationForm, AddressForm
-from .models import User, Address
+from .forms import ProfileEditForm, StudentRegistrationForm, VendorRegistrationForm, AddressForm, LoginForm
+from .models import Address
 
+def login_view(request):
+    if request.user.is_authenticated:
+        return redirect("home")
+
+    next_url = request.GET.get("next") or request.POST.get("next") or "home"
+
+    if request.method == "POST":
+        form = LoginForm(request.POST)
+        if form.is_valid():
+            username = form.cleaned_data["username"]
+            password = form.cleaned_data["password"]
+
+            user = authenticate(request, username=username, password=password)
+
+            if user is not None:
+                login(request, user)
+                return redirect(next_url)
+            else:
+                form.add_error(None, "Invalid username or password")
+    else:
+        form = LoginForm()
+
+    return render(request, "accounts/login.html", {
+        "form": form,
+        "next": next_url
+    })
 
 def register_student(request):
     if request.method == 'POST':

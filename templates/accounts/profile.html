@@ -42,7 +42,7 @@
                 </a>
                 {% endif %}
 
-                {% if user.is_vendor and not user.is_verified %}
+                {% if user.is_vendor and user.is_verified %}
                 <a href="{% url 'vendor_dashboard' %}" class="list-group-item list-group-item-action">
                     <i class="bi bi-shop"></i> Vendor Dashboard
                 </a>
