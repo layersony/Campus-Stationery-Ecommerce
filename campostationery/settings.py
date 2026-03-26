@@ -149,11 +149,9 @@ LOGOUT_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
 
 # Payment Settings (M-Pesa Integration Example)
-MPESA_CONSUMER_KEY = 'your_consumer_key'
-MPESA_CONSUMER_SECRET = 'your_consumer_secret'
-MPESA_PASSKEY = 'your_passkey'
-MPESA_SHORTCODE = '174379'
-MPESA_ENVIRONMENT = 'sandbox'  # Change to 'production' for live
+INTASEND_PUBLISHABLE_KEY = "ISPubKey_test"
+INTASEND_API_KEY = "ISSecretKey_test"
+INTASEND_TEST_MODE = "True"
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
