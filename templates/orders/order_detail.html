@@ -353,6 +353,18 @@
                     </div>
                     {% endif %}
 
+                    {% if order.payment_method == 'mpesa' and order.status != 'delivered' and order.payment_status != 'paid' %}
+                    <div class="alert alert-warning py-2 mb-0 mt-2">
+                        {% if user.is_student %}
+                        Make Payment of KES {{ order.total|intcomma }}
+                        {% else %}
+                        Send STK to Client
+                        {% endif %}
+                        <br>
+                        <a class="btn btn-success" href="{% url 'payment_process' order.order_number %}">Proceed Payment</a>
+                    </div>
+                    {% endif %}
+
                     {% if order.payment.mpesa_receipt_number %}
                     <div class="mt-2 pt-2 border-top">
                         <small class="text-muted"><i class="bi bi-receipt"></i> M-Pesa Receipt: <strong>{{ order.payment.mpesa_receipt_number }}</strong></small>

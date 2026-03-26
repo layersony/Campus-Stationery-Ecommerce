@@ -1,52 +1,83 @@
 {% extends 'base.html' %}
-{% load crispy_forms_tags %}
 {% load humanize %}
 
-{% block title %}Payment | Campus Stationery{% endblock %}
+{% block title %}Pay with M-Pesa | Campus Stationery{% endblock %}
 
 {% block content %}
 <div class="container py-5">
-    <div class="row justify-content-center">
-        <div class="col-md-6">
-            <div class="card shadow">
-                <div class="card-header bg-success text-white text-center">
-                    <h4 class="mb-0"><i class="bi bi-credit-card"></i> M-Pesa Payment</h4>
-                </div>
-                <div class="card-body p-4">
-                    <div class="text-center mb-4">
-                        <h5>Order {{ order.order_number }}</h5>
-                        <p class="h3 text-success mb-0">KES {{ order.total|intcomma }}</p>
-                        <small class="text-muted">Enter your M-Pesa number to receive STK push</small>
-                    </div>
-                    
-                    <form method="post">
-                        {% csrf_token %}
-                        <div class="mb-3">
-                            <label class="form-label">M-Pesa Phone Number</label>
-                            <input type="tel" name="phone_number" class="form-control form-control-lg" 
-                                   placeholder="e.g., 0712345678 or 254712345678" 
-                                   value="{{ default_phone }}" required>
-                            <div class="form-text">Format: 07XX XXX XXX or 2547XX XXX XXX</div>
-                        </div>
-                        
-                        <div class="d-grid gap-2">
-                            <button type="submit" class="btn btn-success btn-lg">
-                                <i class="bi bi-phone"></i> Request M-Pesa Prompt
-                            </button>
-                            <a href="{% url 'order_detail' order.order_number %}" class="btn btn-outline-secondary">
-                                Cancel & Pay Later
-                            </a>
-                        </div>
-                    </form>
-                    
-                    <div class="mt-4 text-center">
-                        <small class="text-muted">
-                            <i class="bi bi-shield-check"></i> Secure payment processed by Safaricom M-Pesa
-                        </small>
-                    </div>
-                </div>
-            </div>
+  <div class="row justify-content-center">
+    <div class="col-md-5">
+
+      <div class="card shadow-sm border-0">
+
+        <!-- Header -->
+        <div class="card-header bg-success text-white text-center py-3">
+          <h5 class="mb-0">
+            <i class="bi bi-phone me-2"></i>M-Pesa STK Push
+          </h5>
+          <small class="opacity-75">Powered by IntaSend</small>
         </div>
+
+        <div class="card-body p-4">
+
+          <!-- Order summary -->
+          <div class="text-center mb-4">
+            <p class="text-muted mb-1">Order <strong>{{ order.order_number }}</strong></p>
+            <p class="display-6 fw-bold text-success mb-0">KES {{ order.total|intcomma }}</p>
+            <sub>Note: <b>KES 1</b> will be used for Testing</sub>
+          </div>
+
+          <hr>
+
+          <!-- Steps -->
+          <ol class="small text-muted mb-4">
+            <li>Enter your Safaricom M-Pesa number below.</li>
+            <li>Click <strong>Send M-Pesa Prompt</strong>.</li>
+            <li>An STK Push will appear on your phone — enter your PIN.</li>
+          </ol>
+
+          <!-- Form -->
+          <form method="post" novalidate>
+            {% csrf_token %}
+
+            <div class="mb-3">
+              <label for="phone_number" class="form-label fw-semibold">M-Pesa Phone Number</label>
+              <div class="input-group input-group-lg">
+                <span class="input-group-text"><i class="bi bi-phone"></i></span>
+                <input
+                  type="tel"
+                  id="phone_number"
+                  name="phone_number"
+                  class="form-control"
+                  placeholder="07XX XXX XXX"
+                  value="{{ default_phone }}"
+                  autocomplete="tel"
+                  required
+                >
+              </div>
+              <div class="form-text">Accepts 07XX, 01XX, or 2547XX formats.</div>
+            </div>
+
+            <div class="d-grid gap-2">
+              <button type="submit" class="btn btn-success btn-lg">
+                <i class="bi bi-send me-1"></i> Send M-Pesa Prompt
+              </button>
+              <a href="{% url 'order_detail' order.order_number %}" class="btn btn-outline-secondary">
+                Pay later
+              </a>
+            </div>
+          </form>
+
+          <!-- Trust badge -->
+          <p class="text-center text-muted small mt-4 mb-0">
+            <i class="bi bi-shield-lock-fill text-success me-1"></i>
+            Secure payments via <strong>IntaSend</strong> &amp; Safaricom M-Pesa
+          </p>
+
+        </div>
+      </div><!-- /card -->
+
     </div>
+  </div>
 </div>
 {% endblock %}
