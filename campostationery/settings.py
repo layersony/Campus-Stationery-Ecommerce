@@ -150,8 +150,8 @@ LOGOUT_REDIRECT_URL = 'home'
 LOGIN_URL = 'login'
 
 # Payment Settings (M-Pesa Integration Example)
-INTASEND_PUBLISHABLE_KEY = "ISPubKey_test_2f7a9588-2a76-46f4-8598-cb19c539d068"
-INTASEND_API_KEY = "ISSecretKey_test_96d356e6-37db-49ec-86ac-126d4f3378e9"
+INTASEND_PUBLISHABLE_KEY = "ISPubKey_test_b91a1192-8b38-4cbf-9b65-9d01694404ef"
+INTASEND_API_KEY = "ISSecretKey_test_343b5aaa-70fe-4f98-a661-3dde5bd3e1e7"
 INTASEND_TEST_MODE = "True"
 
 # Email settings
