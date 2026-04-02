@@ -1,0 +1,285 @@
+{% extends 'reports/base_reports.html' %}
+{% load humanize %}
+{% load reports_extras %}
+
+{% block reports_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Reports Overview</h1>
+    <div class="btn-toolbar mb-2 mb-md-0">
+        <form method="get" class="d-flex gap-2">
+            <input type="date" name="start_date" class="form-control" value="{{ start_date|date:'Y-m-d' }}">
+            <input type="date" name="end_date" class="form-control" value="{{ end_date|date:'Y-m-d' }}">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-filter"></i> Filter
+            </button>
+        </form>
+    </div>
+</div>
+
+<!-- Key Metrics -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Total Revenue</p>
+                        <h3 class="metric-value mb-0">KES {{ total_revenue|intcomma }}</h3>
+                        <small class="{% if revenue_growth >= 0 %}trend-up{% else %}trend-down{% endif %}">
+                            <i class="bi bi-arrow-{% if revenue_growth >= 0 %}up{% else %}down{% endif %}"></i>
+                            {{ revenue_growth|floatformat:1 }}%
+                        </small>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-currency-dollar text-primary fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Total Orders</p>
+                        <h3 class="metric-value mb-0">{{ total_orders|intcomma }}</h3>
+                        <small class="{% if orders_growth >= 0 %}trend-up{% else %}trend-down{% endif %}">
+                            <i class="bi bi-arrow-{% if orders_growth >= 0 %}up{% else %}down{% endif %}"></i>
+                            {{ orders_growth|floatformat:1 }}%
+                        </small>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-bag text-success fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Conversion Rate</p>
+                        <h3 class="metric-value mb-0">{{ conversion_rate|floatformat:1 }}%</h3>
+                        <small class="text-muted">{{ completed_orders }} completed</small>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-graph-up-arrow text-info fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-md-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">New Users</p>
+                        <h3 class="metric-value mb-0">{{ new_users }}</h3>
+                        <small class="text-muted">{{ total_customers }} total customers</small>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-people text-warning fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Sales Chart -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between align-items-center">
+                <h5 class="mb-0">Revenue Trend</h5>
+                <a href="{% url 'reports:sales' %}" class="btn btn-sm btn-outline-primary">View Details</a>
+            </div>
+            <div class="card-body">
+                <canvas id="revenueChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Inventory Alerts -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm border-warning">
+            <div class="card-header bg-warning text-dark">
+                <h5 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Inventory Alerts</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-3 p-2 bg-light rounded">
+                    <span>Low Stock Items</span>
+                    <span class="badge bg-warning">{{ low_stock_products }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-3 p-2 bg-light rounded">
+                    <span>Out of Stock</span>
+                    <span class="badge bg-danger">{{ out_of_stock }}</span>
+                </div>
+                <a href="{% url 'reports:products' %}" class="btn btn-outline-warning w-100">
+                    View Inventory Report
+                </a>
+            </div>
+        </div>
+
+        <!-- Payment Stats -->
+        <div class="card shadow-sm mt-4">
+            <div class="card-header bg-white">
+                <h5 class="mb-0">Payment Overview</h5>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Completed</span>
+                    <span class="fw-bold text-success">{{ payment_stats.completed }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span>Failed</span>
+                    <span class="fw-bold text-danger">{{ payment_stats.failed }}</span>
+                </div>
+                <div class="d-flex justify-content-between">
+                    <span>Success Rate</span>
+                    <span class="fw-bold">
+                        {% if payment_stats.total_payments %}
+                            {% with calc=payment_stats.completed|div:payment_stats.total_payments %}
+                                {{ calc|mul:100|floatformat:1 }}%
+                            {% endwith %}
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Products & Recent Orders -->
+<div class="row g-4 mt-2">
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between">
+                <h5 class="mb-0">Top Selling Products</h5>
+                <a href="{% url 'reports:products' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Product</th>
+                                <th class="text-end">Sold</th>
+                                <th class="text-end">Revenue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for product in top_products %}
+                            <tr>
+                                <td>
+                                    <div class="d-flex align-items-center">
+                                        {% if product.product__image %}
+                                        <img src="{{ product.product__image.url }}" class="rounded me-2" width="40" height="40" style="object-fit: cover;">
+                                        {% endif %}
+                                        <span class="text-truncate" style="max-width: 200px;">{{ product.product_name }}</span>
+                                    </div>
+                                </td>
+                                <td class="text-end">{{ product.total_sold }}</td>
+                                <td class="text-end">KES {{ product.revenue|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">No sales data available</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-6">
+        <div class="card shadow-sm">
+            <div class="card-header bg-white d-flex justify-content-between">
+                <h5 class="mb-0">Recent Orders</h5>
+                <a href="{% url 'reports:orders' %}" class="btn btn-sm btn-outline-primary">View All</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-hover mb-0">
+                        <thead class="table-light">
+                            <tr>
+                                <th>Order #</th>
+                                <th>Customer</th>
+                                <th>Status</th>
+                                <th class="text-end">Total</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for order in recent_orders %}
+                            <tr>
+                                <td><a href="{{ order.get_absolute_url }}">{{ order.order_number }}</a></td>
+                                <td>{{ order.user.get_full_name }}</td>
+                                <td>
+                                    <span class="badge bg-{% if order.status == 'delivered' %}success{% elif order.status == 'cancelled' %}danger{% else %}warning{% endif %}">
+                                        {{ order.get_status_display }}
+                                    </span>
+                                </td>
+                                <td class="text-end">KES {{ order.total|intcomma }}</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted py-3">No recent orders</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block reports_js %}
+<script>
+    // Revenue Chart
+    const ctx = document.getElementById('revenueChart').getContext('2d');
+    new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: {{ sales_data|default:"[]"|safe }},
+            datasets: [{
+                label: 'Revenue (KES)',
+                data: {{ sales_data|default:"[]"|safe }},
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { display: false }
+            },
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return 'KES ' + value.toLocaleString();
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

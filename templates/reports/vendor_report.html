@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block title %}Vendor Report | Campus Stationery{% endblock %}
+
+{% block extra_css %}
+<style>
+    .reports-wrapper { background: #f1f5f9; min-height: 100vh; padding: 2rem 0 4rem; }
+    .reports-header { background: linear-gradient(135deg, #1e3a5f 0%, #2563eb 100%); color: white; border-radius: 16px; padding: 2rem 2.5rem; margin-bottom: 2rem; }
+    .section-card { background: white; border-radius: 14px; box-shadow: 0 1px 4px rgba(0,0,0,.06); overflow: hidden; }
+    .section-card .card-header { background: white; border-bottom: 1.5px solid #f1f5f9; padding: 1.1rem 1.5rem; font-weight: 700; font-size: .95rem; color: #1e293b; display: flex; justify-content: space-between; align-items: center; }
+    .report-table th { background: #f8fafc; font-size: .78rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: #64748b; border-bottom: 2px solid #e2e8f0; padding: .75rem 1rem; }
+    .report-table td { font-size: .875rem; padding: .75rem 1rem; vertical-align: middle; color: #374151; border-color: #f1f5f9; }
+    .report-table tbody tr:hover { background: #f8fafc; }
+    .vendor-avatar { width: 36px; height: 36px; border-radius: 8px; background: linear-gradient(135deg, #667eea, #764ba2); display: flex; align-items: center; justify-content: center; color: white; font-size: .85rem; font-weight: 700; flex-shrink: 0; }
+    .filter-bar { background: white; border-radius: 12px; padding: 1rem 1.5rem; margin-bottom: 2rem; box-shadow: 0 1px 4px rgba(0,0,0,.06); display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+    .period-btn { background: #f1f5f9; border: none; border-radius: 8px; padding: .4rem .9rem; font-size: .82rem; font-weight: 600; color: #64748b; cursor: pointer; transition: all .2s; }
+    .period-btn.active, .period-btn:hover { background: #2563eb; color: white; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="reports-wrapper">
+<div class="container-xl">
+    <div class="reports-header">
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2">
+            <div>
+                <h1 class="fw-bold fs-4 mb-1"><i class="bi bi-shop me-2"></i>Vendor Report</h1>
+                <p class="mb-0 opacity-75" style="font-size:.9rem">{{ date_from|date:"d M Y" }} &mdash; {{ date_to|date:"d M Y" }}</p>
+            </div>
+            <a href="{% url 'report_dashboard' %}" class="btn btn-light btn-sm fw-bold">
+                <i class="bi bi-arrow-left me-1"></i> Back to Dashboard
+            </a>
+        </div>
+    </div>
+
+    <form method="get" class="filter-bar">
+        <div class="d-flex gap-2 me-auto flex-wrap align-items-center">
+            {% for label, value in period_choices %}
+            <button type="submit" name="period" value="{{ value }}"
+                    class="period-btn {% if current_period == value %}active{% endif %}">{{ label }}</button>
+            {% endfor %}
+        </div>
+        <div class="d-flex gap-2 flex-wrap align-items-center">
+            <input type="date" name="date_from" class="form-control" style="width:145px" value="{{ date_from|date:'Y-m-d' }}">
+            <input type="date" name="date_to" class="form-control" style="width:145px" value="{{ date_to|date:'Y-m-d' }}">
+            <button type="submit" class="btn btn-primary">Apply</button>
+        </div>
+    </form>
+
+    <div class="section-card">
+        <div class="card-header">
+            <span><i class="bi bi-people me-2" style="color:#8b5cf6"></i>All Vendors by Revenue</span>
+            <span class="text-muted" style="font-size:.82rem">{{ vendors|length }} vendor{{ vendors|length|pluralize }}</span>
+        </div>
+        <div class="table-responsive">
+            <table class="table report-table mb-0">
+                <thead>
+                    <tr>
+                        <th>Vendor</th>
+                        <th>Email</th>
+                        <th class="text-end">Orders</th>
+                        <th class="text-end">Units Sold</th>
+                        <th class="text-end">Revenue</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vendor in vendors %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <div class="vendor-avatar">
+                                    {{ vendor.product__vendor__business_name|slice:":1"|upper|default:"?" }}
+                                </div>
+                                <span style="font-weight:600">
+                                    {{ vendor.product__vendor__business_name|default:"Unknown" }}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="text-muted">{{ vendor.product__vendor__email }}</td>
+                        <td class="text-end fw-bold">{{ vendor.order_count }}</td>
+                        <td class="text-end">{{ vendor.units_sold|intcomma }}</td>
+                        <td class="text-end fw-bold text-primary">KES {{ vendor.revenue|floatformat:0|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr><td colspan="5" class="text-center text-muted py-4">No vendor data for this period</td></tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+</div>
+{% endblock %}

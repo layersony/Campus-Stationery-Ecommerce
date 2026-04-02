@@ -1,0 +1,175 @@
+{% extends 'reports/base_reports.html' %}
+{% load humanize %}
+{% load reports_extras %}
+
+{% block reports_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Payments Report</h1>
+    <div class="btn-group">
+        <a href="?days=7" class="btn btn-outline-secondary {% if days == 7 %}active{% endif %}">7 Days</a>
+        <a href="?days=30" class="btn btn-outline-secondary {% if days == 30 %}active{% endif %}">30 Days</a>
+        <a href="?days=90" class="btn btn-outline-secondary {% if days == 90 %}active{% endif %}">90 Days</a>
+    </div>
+</div>
+
+<!-- Payment Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-md-3">
+        <div class="card stat-card bg-success text-white">
+            <div class="card-body">
+                <h6>Success Rate</h6>
+                <h2>{{ success_rate|floatformat:1 }}%</h2>
+                <small>{{ mpesa_stats.total_transactions }} transactions</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-primary text-white">
+            <div class="card-body">
+                <h6>Total Volume</h6>
+                <h2>KES {{ mpesa_stats.total_volume|default:0|intcomma }}</h2>
+                <small>M-Pesa payments</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-info text-white">
+            <div class="card-body">
+                <h6>Avg Transaction</h6>
+                <h2>KES {{ mpesa_stats.avg_transaction|default:0|floatformat:2|intcomma }}</h2>
+                <small>Per payment</small>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-3">
+        <div class="card stat-card bg-warning text-dark">
+            <div class="card-body">
+                <h6>Failed Payments</h6>
+                <h2>
+                    {% with total=status_distribution|sum_by_key:"count" %}
+                        {% with failed=status_distribution|sum_by_key:"failed" %}
+                            {{ failed }}
+                        {% endwith %}
+                    {% endwith %}
+                </h2>
+                <small>Needs attention</small>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Payment Trends -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Payment Volume Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="paymentTrendChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Status Distribution -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Status Distribution</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="paymentStatusChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Status Breakdown Table -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Payment Status Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Status</th>
+                        <th class="text-end">Count</th>
+                        <th class="text-end">Amount</th>
+                        <th class="text-end">Percentage</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for status in status_distribution %}
+                    <tr>
+                        <td>
+                            <span class="badge bg-{% if status.status == 'completed' %}success{% elif status.status == 'failed' %}danger{% elif status.status == 'pending' %}warning{% else %}secondary{% endif %}">
+                                {{ status.status|title }}
+                            </span>
+                        </td>
+                        <td class="text-end">{{ status.count|intcomma }}</td>
+                        <td class="text-end">KES {{ status.amount|default:0|intcomma }}</td>
+                        <td class="text-end">
+                            {% with total=status_distribution|sum_by_key:"count" %}
+                                {% if total %}
+                                    {% with pct=status.count|div:total %}{{ pct|mul:100|floatformat:1 }}{% endwith %}%
+                                {% else %}
+                                    0%
+                                {% endif %}
+                            {% endwith %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No payment data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block reports_js %}
+<script>
+    // Payment Trends
+    new Chart(document.getElementById('paymentTrendChart'), {
+        type: 'bar',
+        data: {
+            labels: {{ daily_payments|safe }}.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' });
+            }),
+            datasets: [{
+                label: 'Successful',
+                data: {{ daily_payments|safe }}.map(d => d.total),
+                backgroundColor: '#10b981'
+            }, {
+                label: 'Failed',
+                data: {{ daily_payments|safe }}.map(d => d.failed),
+                backgroundColor: '#ef4444'
+            }]
+        },
+        options: {
+            scales: {
+                x: { stacked: true },
+                y: { stacked: true }
+            }
+        }
+    });
+
+    // Status Distribution
+    new Chart(document.getElementById('paymentStatusChart'), {
+        type: 'pie',
+        data: {
+            labels: {{ status_distribution|safe }}.map(s => s.status.charAt(0).toUpperCase() + s.status.slice(1)),
+            datasets: [{
+                data: {{ status_distribution|safe }}.map(s => s.count),
+                backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#6b7280', '#8b5cf6']
+            }]
+        }
+    });
+</script>
+{% endblock %}

@@ -1,0 +1,123 @@
+{% extends 'base.html' %}
+{% load humanize %}
+
+{% block extra_css %}
+<style>
+    /* .reports-sidebar {
+        min-height: calc(100vh - 56px);
+        background: #1e293b;
+    } */
+    /* .reports-sidebar .nav-link {
+        color: #94a3b8;
+        padding: 0.75rem 1rem;
+        border-radius: 0.375rem;
+        margin-bottom: 0.25rem;
+        transition: all 0.2s;
+    }
+    .reports-sidebar .nav-link:hover,
+    .reports-sidebar .nav-link.active {
+        color: #fff;
+        background: #2563eb;
+    }
+    .reports-sidebar .nav-link i {
+        width: 1.5rem;
+    } */
+    .stat-card {
+        border: none;
+        border-radius: 0.75rem;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        transition: transform 0.2s;
+    }
+    .stat-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    }
+    .chart-container {
+        position: relative;
+        height: 300px;
+    }
+    .trend-up { color: #10b981; }
+    .trend-down { color: #ef4444; }
+    .metric-value {
+        font-size: 2rem;
+        font-weight: 700;
+        color: #1e293b;
+    }
+    .metric-label {
+        font-size: 0.875rem;
+        color: #64748b;
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+    }
+    .date-filter-form {
+        background: #f8fafc;
+        padding: 1rem;
+        border-radius: 0.5rem;
+        margin-bottom: 1.5rem;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container-fluid">
+    <div class="row">
+        <!-- Sidebar -->
+        <div class="col-md-3 col-lg-2 d-md-block bg-dark reports-sidebar collapse pt-3">
+            <h5 class="px-3 mb-3 text-white">Reports</h5>
+            <ul class="nav flex-column px-2">
+                <li class="nav-item">
+                    <a class="nav-link text-white" 
+                       href="{% url 'reports:dashboard' %}">
+                        <i class="bi bi-speedometer2"></i> Overview
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" 
+                       href="{% url 'reports:sales' %}">
+                        <i class="bi bi-currency-dollar"></i> Sales
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" 
+                       href="{% url 'reports:orders' %}">
+                        <i class="bi bi-bag"></i> Orders
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" 
+                       href="{% url 'reports:products' %}">
+                        <i class="bi bi-box-seam"></i> Products
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" 
+                       href="{% url 'reports:users' %}">
+                        <i class="bi bi-people"></i> Users
+                    </a>
+                </li>
+                <li class="nav-item">
+                    <a class="nav-link text-white" 
+                       href="{% url 'reports:payments' %}">
+                        <i class="bi bi-credit-card"></i> Payments
+                    </a>
+                </li>
+                <li class="nav-item mt-3">
+                    <a class="nav-link text-white-50" href="{% url 'admin_dashboard' %}">
+                        <i class="bi bi-arrow-left"></i> Back to Admin
+                    </a>
+                </li>
+            </ul>
+        </div>
+
+        <!-- Main Content -->
+        <div class="col-md-9 ms-sm-auto col-lg-10 px-md-4 py-4">
+            {% block reports_content %}{% endblock %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+{% block reports_js %}{% endblock %}
+{% endblock %}

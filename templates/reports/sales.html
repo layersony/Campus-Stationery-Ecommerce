@@ -1,0 +1,209 @@
+{% extends 'reports/base_reports.html' %}
+{% load humanize %}
+{% load reports_extras %}
+
+{% block reports_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Sales Report</h1>
+    <div class="btn-group">
+        <a href="?period=daily&days={{ days }}" class="btn btn-outline-secondary {% if period == 'daily' %}active{% endif %}">Daily</a>
+        <a href="?period=weekly&days={{ days }}" class="btn btn-outline-secondary {% if period == 'weekly' %}active{% endif %}">Weekly</a>
+        <a href="?period=monthly&days={{ days }}" class="btn btn-outline-secondary {% if period == 'monthly' %}active{% endif %}">Monthly</a>
+        <a href="{% url 'reports:export' 'sales' %}" class="btn btn-success">
+            <i class="bi bi-download"></i> Export CSV
+        </a>
+    </div>
+</div>
+
+<!-- Summary Cards -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card bg-primary text-white">
+            <div class="card-body">
+                <h5>Total Revenue</h5>
+                <h2>KES {{ total_revenue|intcomma }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card bg-success text-white">
+            <div class="card-body">
+                <h5>Total Orders</h5>
+                <h2>{{ total_orders|intcomma }}</h2>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card bg-info text-white">
+            <div class="card-body">
+                <h5>Average Order Value</h5>
+                <h2>
+                    {% if total_orders %}
+                        KES {% with aov=total_revenue|div:total_orders %}{{ aov|floatformat:2|intcomma }}{% endwith %}
+                    {% else %}
+                        KES 0
+                    {% endif %}
+                </h2>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Sales Trend Chart -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Sales Trend</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="salesTrendChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- Category Performance -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">Sales by Category</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="categoryChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Category Table -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Category Performance Details</h5>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table">
+                <thead>
+                    <tr>
+                        <th>Category</th>
+                        <th class="text-end">Items Sold</th>
+                        <th class="text-end">Revenue</th>
+                        <th class="text-end">% of Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for cat in category_sales %}
+                    <tr>
+                        <td>{{ cat.product__category__name|default:"Uncategorized" }}</td>
+                        <td class="text-end">{{ cat.items_sold|intcomma }}</td>
+                        <td class="text-end">KES {{ cat.revenue|intcomma }}</td>
+                        <td class="text-end">
+                            {% if total_revenue %}
+                                {% with pct=cat.revenue|div:total_revenue %}{{ pct|mul:100|floatformat:1 }}{% endwith %}%
+                            {% else %}
+                                0%
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted">No data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Payment Methods -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Payment Method Breakdown</h5>
+    </div>
+    <div class="card-body">
+        <div class="row">
+            {% for method in payment_methods %}
+            <div class="col-md-3">
+                <div class="text-center p-3 border rounded">
+                    <h6 class="text-muted">{{ method.payment_method|upper }}</h6>
+                    <h4>{{ method.count }}</h4>
+                    <p class="mb-0">KES {{ method.revenue|intcomma }}</p>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block reports_js %}
+<script>
+    // Sales Trend Chart
+    const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
+    new Chart(salesCtx, {
+        type: 'line',
+        data: {
+            labels: {{ sales_data|safe }}.map(d => {
+                const date = new Date(d.period);
+                return date.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' });
+            }),
+            datasets: [{
+                label: 'Revenue',
+                data: {{ sales_data|safe }}.map(d => d.revenue),
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                fill: true,
+                tension: 0.4
+            }, {
+                label: 'Orders',
+                data: {{ sales_data|safe }}.map(d => d.orders),
+                borderColor: '#10b981',
+                backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                fill: true,
+                tension: 0.4,
+                yAxisID: 'y1'
+            }]
+        },
+        options: {
+            responsive: true,
+            interaction: { mode: 'index', intersect: false },
+            scales: {
+                y: {
+                    type: 'linear',
+                    display: true,
+                    position: 'left',
+                    ticks: {
+                        callback: value => 'KES ' + value.toLocaleString()
+                    }
+                },
+                y1: {
+                    type: 'linear',
+                    display: true,
+                    position: 'right',
+                    grid: { drawOnChartArea: false }
+                }
+            }
+        }
+    });
+
+    // Category Chart
+    const catCtx = document.getElementById('categoryChart').getContext('2d');
+    new Chart(catCtx, {
+        type: 'doughnut',
+        data: {
+            labels: {{ category_sales|safe }}.map(c => c.product__category__name || 'Uncategorized'),
+            datasets: [{
+                data: {{ category_sales|safe }}.map(c => c.revenue),
+                backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+            }]
+        },
+        options: {
+            responsive: true,
+            plugins: {
+                legend: { position: 'bottom' }
+            }
+        }
+    });
+</script>
+{% endblock %}

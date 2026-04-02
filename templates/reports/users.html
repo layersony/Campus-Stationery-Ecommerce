@@ -1,0 +1,199 @@
+{% extends 'reports/base_reports.html' %}
+{% load humanize %}
+{% load reports_extras %}
+
+{% block reports_content %}
+<div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pb-2 mb-3 border-bottom">
+    <h1 class="h2">Users Report</h1>
+</div>
+
+<!-- User Stats -->
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="metric-label">Total Users</p>
+                        <h3 class="metric-value">{{ total_users }}</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-people text-primary fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="metric-label">Verified Vendors</p>
+                        <h3 class="metric-value">{{ verified_vendors }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-shop text-success fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card stat-card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between">
+                    <div>
+                        <p class="metric-label">Active Students</p>
+                        <h3 class="metric-value">{{ total_users|sub:verified_vendors }}</h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-mortarboard text-info fs-4"></i>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4">
+    <!-- Registration Trends -->
+    <div class="col-lg-8">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">User Registration Trends (Last 90 Days)</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="regChart" height="300"></canvas>
+            </div>
+        </div>
+    </div>
+
+    <!-- User Type Distribution -->
+    <div class="col-lg-4">
+        <div class="card shadow-sm">
+            <div class="card-header">
+                <h5 class="mb-0">User Types</h5>
+            </div>
+            <div class="card-body">
+                <canvas id="typeChart" height="250"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Top Customers -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Top Customers by Spend</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Customer</th>
+                        <th>Email</th>
+                        <th class="text-end">Orders</th>
+                        <th class="text-end">Total Spent</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for customer in top_customers %}
+                    <tr>
+                        <td>
+                            <div class="d-flex align-items-center">
+                                <div class="bg-primary text-white rounded-circle d-flex align-items-center justify-content-center me-2" 
+                                     style="width: 40px; height: 40px;">
+                                    {{ customer.first_name|first }}{{ customer.last_name|first }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold">{{ customer.get_full_name }}</div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ customer.email }}</td>
+                        <td class="text-end">{{ customer.order_count }}</td>
+                        <td class="text-end fw-bold">KES {{ customer.total_spent|intcomma }}</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">No customer data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Vendor Performance -->
+<div class="card shadow-sm mt-4">
+    <div class="card-header">
+        <h5 class="mb-0">Vendor Performance</h5>
+    </div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead class="table-light">
+                    <tr>
+                        <th>Vendor</th>
+                        <th>Business</th>
+                        <th class="text-end">Products</th>
+                        <th class="text-end">Total Sales</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for vendor in vendor_performance %}
+                    <tr>
+                        <td>{{ vendor.get_full_name }}</td>
+                        <td>{{ vendor.business_name }}</td>
+                        <td class="text-end">{{ vendor.product_count }}</td>
+                        <td class="text-end">{{ vendor.total_sales|default:0|intcomma }} units</td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="4" class="text-center text-muted py-4">No vendor data available</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block reports_js %}
+<script>
+    // Registration Trends
+    new Chart(document.getElementById('regChart'), {
+        type: 'line',
+        data: {
+            labels: {{ reg_trends|safe }}.map(d => {
+                const date = new Date(d.date);
+                return date.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' });
+            }),
+            datasets: [{
+                label: 'New Registrations',
+                data: {{ reg_trends|safe }}.map(d => d.count),
+                borderColor: '#2563eb',
+                backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                fill: true,
+                tension: 0.4
+            }]
+        }
+    });
+
+    // User Types
+    new Chart(document.getElementById('typeChart'), {
+        type: 'doughnut',
+        data: {
+            labels: {{ user_types|safe }}.map(u => u.user_type.charAt(0).toUpperCase() + u.user_type.slice(1)),
+            datasets: [{
+                data: {{ user_types|safe }}.map(u => u.count),
+                backgroundColor: ['#2563eb', '#10b981', '#f59e0b']
+            }]
+        }
+    });
+</script>
+{% endblock %}
