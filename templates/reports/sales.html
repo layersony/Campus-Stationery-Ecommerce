@@ -20,36 +20,59 @@
 {{ category_sales|json_script:"category-data" }}
 
 <!-- Summary Cards -->
-<div class="row g-4 mb-4">
+<div class="row g-4 mb-4">    
     <div class="col-md-4">
-        <div class="card stat-card bg-primary text-white">
+        <div class="card stat-card h-100">
             <div class="card-body">
-                <h5>Total Revenue</h5>
-                <h2>KES {{ total_revenue|intcomma }}</h2>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Total Revenue</p>
+                        <h3 class="metric-value mb-0">KES {{ total_revenue|intcomma }}</h3>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-currency-dollar text-primary fs-4"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
     <div class="col-md-4">
-        <div class="card stat-card bg-success text-white">
+        <div class="card stat-card h-100">
             <div class="card-body">
-                <h5>Total Orders</h5>
-                <h2>{{ total_orders|intcomma }}</h2>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Total Orders</p>
+                        <h3 class="metric-value mb-0">{{ total_orders|intcomma }}</h3>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-bag text-success fs-4"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
+
     <div class="col-md-4">
-        <div class="card stat-card bg-info text-white">
+        <div class="card stat-card h-100">
             <div class="card-body">
-                <h5>Average Order Value</h5>
-                <h2>
-                    {% if total_orders > 0 %}
-                        KES {% with aov=total_revenue|div:total_orders %}
-                            {{ aov|floatformat:2|intcomma }}
-                        {% endwith %}
-                    {% else %}
-                        KES 0
-                    {% endif %}
-                </h2>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Average Order Value</p>
+                        <h3 class="metric-value mb-0">
+                            {% if total_orders > 0 %}
+                                KES {% with aov=total_revenue|div:total_orders %}
+                                    {{ aov|floatformat:2|intcomma }}
+                                {% endwith %}
+                            {% else %}
+                                KES 0
+                            {% endif %}
+                        </h3>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-graph-up-arrow text-info fs-4"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

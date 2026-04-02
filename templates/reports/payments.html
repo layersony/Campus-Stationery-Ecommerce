@@ -19,54 +19,90 @@
 <!-- Payment Stats -->
 <div class="row g-4 mb-4">
 
-    <!-- Success Rate -->
+
     <div class="col-md-3">
-        <div class="card stat-card bg-success text-white">
+        <div class="card stat-card h-100">
             <div class="card-body">
-                <h6>Success Rate</h6>
-                <h2>{{ success_rate|floatformat:1 }}%</h2>
-                <small>{{ mpesa_stats.total_transactions|default:0 }} transactions</small>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Success Rate</p>
+                        <h3 class="metric-value mb-0">{{ success_rate|floatformat:1 }}%</h3>
+                        <small>
+                            {{ mpesa_stats.total_transactions|default:0 }} transactions
+                        </small>
+                    </div>
+                    <div class="bg-success bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-check-circle text-success fs-4"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Total Volume -->
     <div class="col-md-3">
-        <div class="card stat-card bg-primary text-white">
+        <div class="card stat-card h-100">
             <div class="card-body">
-                <h6>Total Volume</h6>
-                <h2>KES {{ mpesa_stats.total_volume|default:0|intcomma }}</h2>
-                <small>M-Pesa payments</small>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Total Volume</p>
+                        <h3 class="metric-value mb-0">KES {{ mpesa_stats.total_volume|default:0|intcomma }}</h3>
+                        <small>
+                            M-Pesa payments
+                        </small>
+                    </div>
+                    <div class="bg-primary bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-currency-dollar text-primary fs-4"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Avg Transaction -->
     <div class="col-md-3">
-        <div class="card stat-card bg-info text-white">
+        <div class="card stat-card h-100">
             <div class="card-body">
-                <h6>Avg Transaction</h6>
-                <h2>KES {{ mpesa_stats.avg_transaction|default:0|floatformat:2|intcomma }}</h2>
-                <small>Per payment</small>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Avg Transaction</p>
+                        <h3 class="metric-value mb-0">KES {{ mpesa_stats.avg_transaction|default:0|floatformat:2|intcomma }}</h3>
+                        <small>
+                            Per payment
+                        </small>
+                    </div>
+                    <div class="bg-info bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-graph-up text-info fs-4"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Failed Payments (FIXED) -->
     <div class="col-md-3">
-        <div class="card stat-card bg-warning text-dark">
+        <div class="card stat-card h-100">
             <div class="card-body">
-                <h6>Failed Payments</h6>
-                <h2>
-                    {% with failed_count=0 %}
-                        {% for s in status_distribution %}
-                            {% if s.status == 'failed' %}
-                                {{ s.count }}
-                            {% endif %}
-                        {% endfor %}
-                    {% endwith %}
-                </h2>
-                <small>Needs attention</small>
+                <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                        <p class="metric-label mb-1">Failed Payments</p>
+                        <h3 class="metric-value mb-0">
+                            {% with failed_count=0 %}
+                                {% for s in status_distribution %}
+                                    {% if s.status == 'failed' %}
+                                        {{ s.count }}
+                                    {% endif %}
+                                {% endfor %}
+                            {% endwith %}
+                        </h3>
+                        <small>
+                            Needs attention
+                        </small>
+                    </div>
+                    <div class="bg-warning bg-opacity-10 p-3 rounded">
+                        <i class="bi bi-exclamation-triangle text-warning fs-4"></i>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
