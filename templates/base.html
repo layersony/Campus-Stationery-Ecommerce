@@ -77,11 +77,13 @@
                             {% if user.is_vendor and user.is_verified %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'vendor_dashboard' %}">Vendor Dashboard</a></li>
-                            <li><a class="dropdown-item" href="{% url 'order_list' %}">Client Orders</a></li>
+                            <li><a class="dropdown-item" href="{% url 'vendor_orders' %}">Client Orders</a></li>
+                            <li><a class="dropdown-item" href="{% url 'reports:dashboard' %}">Reports</a></li>
                             {% endif %}
                             {% if user.is_admin %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'admin_dashboard' %}">Admin Dashboard</a></li>
+                            <li><a class="dropdown-item" href="{% url 'reports:dashboard' %}">Reports</a></li>
                             {% endif %}
                             <li><hr class="dropdown-divider"></li>
                             <li><a class="dropdown-item" href="{% url 'logout' %}">Logout</a></li>
