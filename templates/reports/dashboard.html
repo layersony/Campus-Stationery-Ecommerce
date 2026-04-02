@@ -244,19 +244,28 @@
         </div>
     </div>
 </div>
+
+<!-- JSON Data for Charts -->
+{{ sales_data|json_script:"sales-data" }}
 {% endblock %}
 
 {% block reports_js %}
 <script>
+    // Parse JSON data safely
+    const salesData = JSON.parse(document.getElementById('sales-data').textContent);
+    
     // Revenue Chart
     const ctx = document.getElementById('revenueChart').getContext('2d');
     new Chart(ctx, {
         type: 'line',
         data: {
-            labels: {{ sales_data|default:"[]"|safe }},
+            labels: salesData.map(d => {
+                const date = new Date(d.period || d.date);
+                return date.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' });
+            }),
             datasets: [{
                 label: 'Revenue (KES)',
-                data: {{ sales_data|default:"[]"|safe }},
+                data: salesData.map(d => d.revenue || d.total),
                 borderColor: '#2563eb',
                 backgroundColor: 'rgba(37, 99, 235, 0.1)',
                 fill: true,

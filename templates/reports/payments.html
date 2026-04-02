@@ -12,17 +12,25 @@
     </div>
 </div>
 
+<!-- JSON DATA -->
+{{ daily_payments|json_script:"daily-payments-data" }}
+{{ status_distribution|json_script:"payment-status-data" }}
+
 <!-- Payment Stats -->
 <div class="row g-4 mb-4">
+
+    <!-- Success Rate -->
     <div class="col-md-3">
         <div class="card stat-card bg-success text-white">
             <div class="card-body">
                 <h6>Success Rate</h6>
                 <h2>{{ success_rate|floatformat:1 }}%</h2>
-                <small>{{ mpesa_stats.total_transactions }} transactions</small>
+                <small>{{ mpesa_stats.total_transactions|default:0 }} transactions</small>
             </div>
         </div>
     </div>
+
+    <!-- Total Volume -->
     <div class="col-md-3">
         <div class="card stat-card bg-primary text-white">
             <div class="card-body">
@@ -32,6 +40,8 @@
             </div>
         </div>
     </div>
+
+    <!-- Avg Transaction -->
     <div class="col-md-3">
         <div class="card stat-card bg-info text-white">
             <div class="card-body">
@@ -41,50 +51,55 @@
             </div>
         </div>
     </div>
+
+    <!-- Failed Payments (FIXED) -->
     <div class="col-md-3">
         <div class="card stat-card bg-warning text-dark">
             <div class="card-body">
                 <h6>Failed Payments</h6>
                 <h2>
-                    {% with total=status_distribution|sum_by_key:"count" %}
-                        {% with failed=status_distribution|sum_by_key:"failed" %}
-                            {{ failed }}
-                        {% endwith %}
+                    {% with failed_count=0 %}
+                        {% for s in status_distribution %}
+                            {% if s.status == 'failed' %}
+                                {{ s.count }}
+                            {% endif %}
+                        {% endfor %}
                     {% endwith %}
                 </h2>
                 <small>Needs attention</small>
             </div>
         </div>
     </div>
+
 </div>
 
 <div class="row g-4">
     <!-- Payment Trends -->
-    <div class="col-lg-8">
+    <div class="col-lg-6">
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0">Payment Volume Trend</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body chart-container">
                 <canvas id="paymentTrendChart" height="300"></canvas>
             </div>
         </div>
     </div>
 
     <!-- Status Distribution -->
-    <div class="col-lg-4">
+    <div class="col-lg-6">
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0">Status Distribution</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body chart-container">
                 <canvas id="paymentStatusChart" height="250"></canvas>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Status Breakdown Table -->
+<!-- Status Table -->
 <div class="card shadow-sm mt-4">
     <div class="card-header">
         <h5 class="mb-0">Payment Status Details</h5>
@@ -101,6 +116,7 @@
                     </tr>
                 </thead>
                 <tbody>
+                    {% with total=status_distribution|sum_by_key:"count" %}
                     {% for status in status_distribution %}
                     <tr>
                         <td>
@@ -111,13 +127,13 @@
                         <td class="text-end">{{ status.count|intcomma }}</td>
                         <td class="text-end">KES {{ status.amount|default:0|intcomma }}</td>
                         <td class="text-end">
-                            {% with total=status_distribution|sum_by_key:"count" %}
-                                {% if total %}
-                                    {% with pct=status.count|div:total %}{{ pct|mul:100|floatformat:1 }}{% endwith %}%
-                                {% else %}
-                                    0%
-                                {% endif %}
-                            {% endwith %}
+                            {% if total %}
+                                {% with pct=status.count|div:total %}
+                                    {{ pct|mul:100|floatformat:1 }}%
+                                {% endwith %}
+                            {% else %}
+                                0%
+                            {% endif %}
                         </td>
                     </tr>
                     {% empty %}
@@ -125,6 +141,7 @@
                         <td colspan="4" class="text-center text-muted">No payment data available</td>
                     </tr>
                     {% endfor %}
+                    {% endwith %}
                 </tbody>
             </table>
         </div>
@@ -134,42 +151,69 @@
 
 {% block reports_js %}
 <script>
-    // Payment Trends
+const dailyPaymentsData = JSON.parse(document.getElementById('daily-payments-data').textContent);
+const paymentStatusData = JSON.parse(document.getElementById('payment-status-data').textContent);
+
+/* =========================
+   PAYMENT TREND CHART
+========================= */
+if (dailyPaymentsData.length) {
     new Chart(document.getElementById('paymentTrendChart'), {
         type: 'bar',
         data: {
-            labels: {{ daily_payments|safe }}.map(d => {
+            labels: dailyPaymentsData.map(d => {
                 const date = new Date(d.date);
                 return date.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' });
             }),
-            datasets: [{
-                label: 'Successful',
-                data: {{ daily_payments|safe }}.map(d => d.total),
-                backgroundColor: '#10b981'
-            }, {
-                label: 'Failed',
-                data: {{ daily_payments|safe }}.map(d => d.failed),
-                backgroundColor: '#ef4444'
-            }]
+            datasets: [
+                {
+                    label: 'Successful',
+                    data: dailyPaymentsData.map(d => d.total || 0),
+                    backgroundColor: '#10b981'
+                },
+                {
+                    label: 'Failed',
+                    data: dailyPaymentsData.map(d => d.failed || 0),
+                    backgroundColor: '#ef4444'
+                }
+            ]
         },
         options: {
+            responsive: true,
             scales: {
                 x: { stacked: true },
                 y: { stacked: true }
             }
         }
     });
+} else {
+    document.getElementById('paymentTrendChart').parentElement.innerHTML =
+        '<p class="text-muted text-center">No payment data available</p>';
+}
 
-    // Status Distribution
+/* =========================
+   STATUS PIE CHART
+========================= */
+if (paymentStatusData.length) {
+    const colors = paymentStatusData.map((_, i) =>
+        `hsl(${i * 60}, 70%, 60%)`
+    );
+
     new Chart(document.getElementById('paymentStatusChart'), {
         type: 'pie',
         data: {
-            labels: {{ status_distribution|safe }}.map(s => s.status.charAt(0).toUpperCase() + s.status.slice(1)),
+            labels: paymentStatusData.map(s =>
+                s.status.charAt(0).toUpperCase() + s.status.slice(1)
+            ),
             datasets: [{
-                data: {{ status_distribution|safe }}.map(s => s.count),
-                backgroundColor: ['#10b981', '#ef4444', '#f59e0b', '#6b7280', '#8b5cf6']
+                data: paymentStatusData.map(s => s.count || 0),
+                backgroundColor: colors
             }]
         }
     });
+} else {
+    document.getElementById('paymentStatusChart').parentElement.innerHTML =
+        '<p class="text-muted text-center">No status data</p>';
+}
 </script>
 {% endblock %}

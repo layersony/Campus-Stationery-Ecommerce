@@ -15,6 +15,10 @@
     </div>
 </div>
 
+<!-- JSON DATA -->
+{{ sales_data|json_script:"sales-data" }}
+{{ category_sales|json_script:"category-data" }}
+
 <!-- Summary Cards -->
 <div class="row g-4 mb-4">
     <div class="col-md-4">
@@ -38,8 +42,10 @@
             <div class="card-body">
                 <h5>Average Order Value</h5>
                 <h2>
-                    {% if total_orders %}
-                        KES {% with aov=total_revenue|div:total_orders %}{{ aov|floatformat:2|intcomma }}{% endwith %}
+                    {% if total_orders > 0 %}
+                        KES {% with aov=total_revenue|div:total_orders %}
+                            {{ aov|floatformat:2|intcomma }}
+                        {% endwith %}
                     {% else %}
                         KES 0
                     {% endif %}
@@ -50,25 +56,25 @@
 </div>
 
 <div class="row g-4">
-    <!-- Sales Trend Chart -->
-    <div class="col-lg-8">
+    <!-- Sales Trend -->
+    <div class="col-lg-6">
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0">Sales Trend</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body chart-container">
                 <canvas id="salesTrendChart" height="300"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- Category Performance -->
-    <div class="col-lg-4">
+    <!-- Category Chart -->
+    <div class="col-lg-6">
         <div class="card shadow-sm">
             <div class="card-header">
                 <h5 class="mb-0">Sales by Category</h5>
             </div>
-            <div class="card-body">
+            <div class="card-body chart-container">
                 <canvas id="categoryChart" height="250"></canvas>
             </div>
         </div>
@@ -94,12 +100,14 @@
                 <tbody>
                     {% for cat in category_sales %}
                     <tr>
-                        <td>{{ cat.product__category__name|default:"Uncategorized" }}</td>
+                        <td>{{ cat.category|default:"Uncategorized" }}</td>
                         <td class="text-end">{{ cat.items_sold|intcomma }}</td>
                         <td class="text-end">KES {{ cat.revenue|intcomma }}</td>
                         <td class="text-end">
-                            {% if total_revenue %}
-                                {% with pct=cat.revenue|div:total_revenue %}{{ pct|mul:100|floatformat:1 }}{% endwith %}%
+                            {% if total_revenue > 0 %}
+                                {% with pct=cat.revenue|div:total_revenue %}
+                                    {{ pct|mul:100|floatformat:1 }}%
+                                {% endwith %}
                             {% else %}
                                 0%
                             {% endif %}
@@ -131,6 +139,8 @@
                     <p class="mb-0">KES {{ method.revenue|intcomma }}</p>
                 </div>
             </div>
+            {% empty %}
+            <p class="text-center text-muted">No payment data available</p>
             {% endfor %}
         </div>
     </div>
@@ -139,71 +149,106 @@
 
 {% block reports_js %}
 <script>
-    // Sales Trend Chart
+const salesData = JSON.parse(document.getElementById('sales-data').textContent);
+const categoryData = JSON.parse(document.getElementById('category-data').textContent);
+
+/* =========================
+   SALES TREND CHART
+========================= */
+if (salesData.length) {
     const salesCtx = document.getElementById('salesTrendChart').getContext('2d');
+
     new Chart(salesCtx, {
         type: 'line',
         data: {
-            labels: {{ sales_data|safe }}.map(d => {
+            labels: salesData.map(d => {
                 const date = new Date(d.period);
                 return date.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' });
             }),
-            datasets: [{
-                label: 'Revenue',
-                data: {{ sales_data|safe }}.map(d => d.revenue),
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                fill: true,
-                tension: 0.4
-            }, {
-                label: 'Orders',
-                data: {{ sales_data|safe }}.map(d => d.orders),
-                borderColor: '#10b981',
-                backgroundColor: 'rgba(16, 185, 129, 0.1)',
-                fill: true,
-                tension: 0.4,
-                yAxisID: 'y1'
-            }]
+            datasets: [
+                {
+                    label: 'Revenue',
+                    data: salesData.map(d => d.revenue),
+                    borderColor: '#2563eb',
+                    backgroundColor: 'rgba(37, 99, 235, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                },
+                {
+                    label: 'Orders',
+                    data: salesData.map(d => d.orders),
+                    borderColor: '#10b981',
+                    backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                    fill: true,
+                    tension: 0.4,
+                    yAxisID: 'y1'
+                }
+            ]
         },
         options: {
             responsive: true,
             interaction: { mode: 'index', intersect: false },
+            plugins: {
+                tooltip: {
+                    callbacks: {
+                        label: ctx => 'KES ' + ctx.raw.toLocaleString()
+                    }
+                }
+            },
             scales: {
                 y: {
-                    type: 'linear',
-                    display: true,
-                    position: 'left',
                     ticks: {
                         callback: value => 'KES ' + value.toLocaleString()
                     }
                 },
                 y1: {
-                    type: 'linear',
-                    display: true,
                     position: 'right',
                     grid: { drawOnChartArea: false }
                 }
             }
         }
     });
+} else {
+    document.getElementById('salesTrendChart').parentElement.innerHTML =
+        '<p class="text-muted text-center">No sales data available</p>';
+}
 
-    // Category Chart
+/* =========================
+   CATEGORY CHART
+========================= */
+if (categoryData.length) {
     const catCtx = document.getElementById('categoryChart').getContext('2d');
+
+    const colors = categoryData.map((_, i) =>
+        `hsl(${i * 60}, 70%, 60%)`
+    );
+
     new Chart(catCtx, {
         type: 'doughnut',
         data: {
-            labels: {{ category_sales|safe }}.map(c => c.product__category__name || 'Uncategorized'),
+            labels: categoryData.map(c =>
+                c.product__category__name || 'Uncategorized'
+            ),
             datasets: [{
-                data: {{ category_sales|safe }}.map(c => c.revenue),
-                backgroundColor: ['#2563eb', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899']
+                data: categoryData.map(c => c.revenue),
+                backgroundColor: colors
             }]
         },
         options: {
             responsive: true,
             plugins: {
-                legend: { position: 'bottom' }
+                legend: { position: 'bottom' },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => 'KES ' + ctx.raw.toLocaleString()
+                    }
+                }
             }
         }
     });
+} else {
+    document.getElementById('categoryChart').parentElement.innerHTML =
+        '<p class="text-muted text-center">No category data</p>';
+}
 </script>
 {% endblock %}

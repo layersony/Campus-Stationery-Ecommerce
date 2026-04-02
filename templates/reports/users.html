@@ -56,32 +56,6 @@
     </div>
 </div>
 
-<div class="row g-4">
-    <!-- Registration Trends -->
-    <div class="col-lg-8">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0">User Registration Trends (Last 90 Days)</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="regChart" height="300"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <!-- User Type Distribution -->
-    <div class="col-lg-4">
-        <div class="card shadow-sm">
-            <div class="card-header">
-                <h5 class="mb-0">User Types</h5>
-            </div>
-            <div class="card-body">
-                <canvas id="typeChart" height="250"></canvas>
-            </div>
-        </div>
-    </div>
-</div>
-
 <!-- Top Customers -->
 <div class="card shadow-sm mt-4">
     <div class="card-header">
@@ -161,39 +135,4 @@
         </div>
     </div>
 </div>
-{% endblock %}
-
-{% block reports_js %}
-<script>
-    // Registration Trends
-    new Chart(document.getElementById('regChart'), {
-        type: 'line',
-        data: {
-            labels: {{ reg_trends|safe }}.map(d => {
-                const date = new Date(d.date);
-                return date.toLocaleDateString('en-KE', { month: 'short', day: 'numeric' });
-            }),
-            datasets: [{
-                label: 'New Registrations',
-                data: {{ reg_trends|safe }}.map(d => d.count),
-                borderColor: '#2563eb',
-                backgroundColor: 'rgba(37, 99, 235, 0.1)',
-                fill: true,
-                tension: 0.4
-            }]
-        }
-    });
-
-    // User Types
-    new Chart(document.getElementById('typeChart'), {
-        type: 'doughnut',
-        data: {
-            labels: {{ user_types|safe }}.map(u => u.user_type.charAt(0).toUpperCase() + u.user_type.slice(1)),
-            datasets: [{
-                data: {{ user_types|safe }}.map(u => u.count),
-                backgroundColor: ['#2563eb', '#10b981', '#f59e0b']
-            }]
-        }
-    });
-</script>
 {% endblock %}

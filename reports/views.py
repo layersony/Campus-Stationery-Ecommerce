@@ -95,8 +95,31 @@ def reports_dashboard(request):
         total_sold=Sum('quantity'),
         revenue=Sum(F('product_price') * F('quantity'))
     ).order_by('-total_sold')[:5]
+
+    sales_qs = Order.objects.filter(
+        created_at__date__gte=start_date,
+        created_at__date__lte=end_date,
+        payment_status='paid'
+    ).annotate(
+        period=TruncDate('created_at')
+    ).values('period').annotate(
+        revenue=Sum('total'),
+        orders=Count('id'),
+        avg_order_value=Avg('total')
+    ).order_by('period')
+
+    sales_data = [
+        {
+            "period": item["period"].isoformat() if item["period"] else None,
+            "revenue": float(item["revenue"] or 0),
+            "orders": item["orders"] or 0,
+            "avg_order_value": float(item["avg_order_value"] or 0),
+        }
+        for item in sales_qs
+    ]
     
     context = {
+        'sales_data': sales_data,
         'start_date': start_date,
         'end_date': end_date,
         'total_revenue': total_revenue,
@@ -121,25 +144,20 @@ def reports_dashboard(request):
 @user_passes_test(is_admin_or_vendor)
 def sales_report(request):
     """Detailed sales analytics"""
-    period = request.GET.get('period', 'daily')  # daily, weekly, monthly
+    period = request.GET.get('period', 'daily')
     days = int(request.GET.get('days', 30))
-    
+
     end_date = timezone.now().date()
     start_date = end_date - timedelta(days=days)
-    
-    # Determine truncation based on period
+
     if period == 'monthly':
         trunc_func = TruncMonth
-        date_format = '%b %Y'
     elif period == 'weekly':
         trunc_func = TruncWeek
-        date_format = 'Week %W'
     else:
         trunc_func = TruncDate
-        date_format = '%b %d'
-    
-    # Sales trend data
-    sales_data = Order.objects.filter(
+
+    sales_qs = Order.objects.filter(
         created_at__date__gte=start_date,
         created_at__date__lte=end_date,
         payment_status='paid'
@@ -150,9 +168,18 @@ def sales_report(request):
         orders=Count('id'),
         avg_order_value=Avg('total')
     ).order_by('period')
-    
-    # Category performance
-    category_sales = OrderItem.objects.filter(
+
+    sales_data = [
+        {
+            "period": item["period"].isoformat() if item["period"] else None,
+            "revenue": float(item["revenue"] or 0),
+            "orders": item["orders"] or 0,
+            "avg_order_value": float(item["avg_order_value"] or 0),
+        }
+        for item in sales_qs
+    ]
+
+    category_qs = OrderItem.objects.filter(
         order__created_at__date__gte=start_date,
         order__created_at__date__lte=end_date,
         order__payment_status='paid'
@@ -162,9 +189,17 @@ def sales_report(request):
         revenue=Sum(F('product_price') * F('quantity')),
         items_sold=Sum('quantity')
     ).order_by('-revenue')
+
+    category_sales = [
+        {
+            "category": item["product__category__name"] or "Uncategorized",
+            "revenue": float(item["revenue"] or 0),
+            "items_sold": item["items_sold"] or 0,
+        }
+        for item in category_qs
+    ]
     
-    # Payment method breakdown
-    payment_methods = Order.objects.filter(
+    payment_qs = Order.objects.filter(
         created_at__date__gte=start_date,
         created_at__date__lte=end_date,
         payment_status='paid'
@@ -172,19 +207,30 @@ def sales_report(request):
         count=Count('id'),
         revenue=Sum('total')
     )
-    
-    context = {
-        'sales_data': list(sales_data),
-        'category_sales': category_sales,
-        'payment_methods': payment_methods,
-        'period': period,
-        'days': days,
-        'total_revenue': sum(d['revenue'] for d in sales_data),
-        'total_orders': sum(d['orders'] for d in sales_data),
-    }
-    
-    return render(request, 'reports/sales.html', context)
 
+    payment_methods = [
+        {
+            "payment_method": item["payment_method"],
+            "count": item["count"],
+            "revenue": float(item["revenue"] or 0),
+        }
+        for item in payment_qs
+    ]
+
+    total_revenue = sum(d["revenue"] for d in sales_data)
+    total_orders = sum(d["orders"] for d in sales_data)
+
+    context = {
+        "sales_data": sales_data,
+        "category_sales": category_sales,
+        "payment_methods": payment_methods,
+        "period": period,
+        "days": days,
+        "total_revenue": total_revenue,
+        "total_orders": total_orders,
+    }
+
+    return render(request, 'reports/sales.html', context)
 
 @login_required
 @user_passes_test(is_admin_or_vendor)
@@ -356,6 +402,15 @@ def payments_report(request):
         count=Count('id'),
         amount=Sum('amount')
     ).order_by('-count')
+
+    status_dist = [
+    {
+        "status": s["status"],
+        "count": s["count"],
+        "amount": float(s["amount"] or 0)
+    }
+    for s in status_dist
+]
     
     # Daily payment volume
     daily_payments = Payment.objects.filter(
