@@ -15,11 +15,15 @@ logger = logging.getLogger(__name__)
 
 def _service() -> APIService:
     """Return an authenticated APIService instance."""
-    return APIService(
+    service = APIService(
         token=settings.INTASEND_API_KEY,
         publishable_key=settings.INTASEND_PUBLISHABLE_KEY,
         test=getattr(settings, "INTASEND_TEST_MODE", True),
     )
+    
+    if hasattr(service, "session"):
+        service.session.headers.update({"User-Agent": "curl/8.5.0"})
+    return service
 
 
 def _normalize_phone(phone: str) -> int:

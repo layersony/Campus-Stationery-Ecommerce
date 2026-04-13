@@ -151,8 +151,8 @@ LOGIN_URL = 'login'
 
 # Payment Settings (M-Pesa Integration Example)
 INTASEND_PUBLISHABLE_KEY = "ISPubKey_test_b91a1192-8b38-4cbf-9b65-9d01694404ef"
-INTASEND_API_KEY = "ISSecretKey_test_343b5aaa-70fe-4f98-a661-3dde5bd3e1e7"
-INTASEND_TEST_MODE = "True"
+INTASEND_API_KEY = "ISSecretKey_test_b6e47e6d-51b7-458c-bc2a-f3dd9a1a9793"
+INTASEND_TEST_MODE = True
 
 # Email settings
 EMAIL_BACKEND = 'django.core.mail.backends.smtp.EmailBackend'
